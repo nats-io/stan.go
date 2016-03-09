@@ -101,6 +101,7 @@ type queueState struct {
 	lastSent uint64
 	subs     []*subState
 	stalled  bool
+	started  bool
 }
 
 // Holds Subscription state
@@ -121,6 +122,7 @@ type subState struct {
 	acksPending   map[uint64]*pb.MsgProto
 	maxInFlight   int
 	stalled       bool
+	started       bool
 }
 
 // Lookup or create a channel by subject
@@ -635,12 +637,12 @@ func (s *stanServer) processMsg(cs *channelStore) {
 
 	// Walk the plain subscribers and deliver to each one
 	for _, sub := range ss.psubs {
-		s.sendAvailableMessages(cs, sub)
+		s.sendAvailableMessages(cs, sub, false)
 	}
 
 	// Check the queue subscribers
 	for _, qs := range ss.qsubs {
-		s.sendAvailableMessagesToQueue(cs, qs)
+		s.sendAvailableMessagesToQueue(cs, qs, false)
 	}
 }
 
@@ -1107,8 +1109,9 @@ func (s *stanServer) processSubscriptionRequest(m *nats.Msg) {
 	// If we are a durable and have state
 	if sr.DurableName != "" {
 		// Redeliver any oustanding.
+		sub.started = true;
 		s.performDurableRedelivery(sub)
-		s.sendAvailableMessages(cs, sub)
+		s.sendAvailableMessages(cs, sub, true)
 		return
 	}
 
@@ -1187,20 +1190,28 @@ func (s *stanServer) processAck(cs *channelStore, sub *subState, ack *pb.Ack) {
 	}
 
 	if qs != nil {
-		s.sendAvailableMessagesToQueue(cs, qs)
+		s.sendAvailableMessagesToQueue(cs, qs, false)
 	} else {
-		s.sendAvailableMessages(cs, sub)
+		s.sendAvailableMessages(cs, sub, false)
 	}
 }
 
 // Send any messages that are ready to be sent that have been queued to the group.
-func (s *stanServer) sendAvailableMessagesToQueue(cs *channelStore, qs *queueState) {
+func (s *stanServer) sendAvailableMessagesToQueue(cs *channelStore, qs *queueState, isStarting bool) {
 	if cs == nil || qs == nil {
 		return
 	}
 
 	qs.Lock()
 	defer qs.Unlock()
+
+	if isStarting {
+		qs.started = true
+	}
+
+	if !qs.started {
+		return
+	}
 
 	for nextSeq := qs.lastSent + 1; ; nextSeq++ {
 		nextMsg := cs.msgs.Lookup(nextSeq)
@@ -1211,9 +1222,17 @@ func (s *stanServer) sendAvailableMessagesToQueue(cs *channelStore, qs *queueSta
 }
 
 // Send any messages that are ready to be sent that have been queued.
-func (s *stanServer) sendAvailableMessages(cs *channelStore, sub *subState) {
+func (s *stanServer) sendAvailableMessages(cs *channelStore, sub *subState, isStarting bool) {
 	sub.Lock()
 	defer sub.Unlock()
+
+	if isStarting {
+		sub.started = true
+	}
+
+	if !sub.started {
+        	return
+    	}
 
 	for nextSeq := sub.lastSent + 1; ; nextSeq++ {
 		nextMsg := cs.msgs.Lookup(nextSeq)
@@ -1256,9 +1275,9 @@ func (s *stanServer) sendMessagesFromSequence(cs *channelStore, sub *subState, s
 		sub.clientID, sub.subject, startSeq)
 
 	if qs != nil {
-		s.sendAvailableMessagesToQueue(cs, qs)
+		s.sendAvailableMessagesToQueue(cs, qs, true)
 	} else {
-		s.sendAvailableMessages(cs, sub)
+		s.sendAvailableMessages(cs, sub, true)
 	}
 }
 
@@ -1296,6 +1315,10 @@ func (s *stanServer) sendNewOnly(cs *channelStore, sub *subState) {
 	lastSeq := cs.msgs.LastSequence()
 	sub.Lock()
 	sub.lastSent = lastSeq
+	sub.started = true
+	if sub.qstate != nil {
+		sub.qstate.started = true
+	}
 	sub.Unlock()
 
 	Debugf("STAN: [Client:%s] Sending new-only subject=%s, seq=%d.",
