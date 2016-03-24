@@ -601,9 +601,9 @@ func findBestQueueSub(sl []*subState) (rsub *subState) {
 		rOut := len(rsub.acksPending)
 		rsub.RUnlock()
 
-		sub.Lock()
+		sub.RLock()
 		sOut := len(sub.acksPending)
-		sub.Unlock()
+		sub.RUnlock()
 
 		if sOut < rOut {
 			rsub = sub
