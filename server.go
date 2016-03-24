@@ -590,10 +590,12 @@ func (s *stanServer) processClientPublish(m *nats.Msg) {
 // FIXME(dlc) - place holder to pick sub that has least outstanding, should just sort,
 // or use insertion sort, etc.
 func findBestQueueSub(sl []*subState) (rsub *subState) {
+	var firstSubInList *subState
 	for _, sub := range sl {
 
 		if rsub == nil {
 			rsub = sub
+			firstSubInList = rsub
 			continue
 		}
 
@@ -608,6 +610,12 @@ func findBestQueueSub(sl []*subState) (rsub *subState) {
 		if sOut < rOut {
 			rsub = sub
 		}
+	}
+
+	if firstSubInList != nil && rsub == firstSubInList {
+		len := len(sl)
+		copy(sl, sl[1:len])
+		sl[len-1] = rsub
 	}
 	return
 }
@@ -749,9 +757,9 @@ func (s *stanServer) performRedelivery(sub *subState, checkExpiration bool) {
 			cs := s.channels.Lookup(subject)
 			ss := cs.subs
 
-			ss.RLock()
+			ss.Lock()
 			pick = findBestQueueSub(qs.subs)
-			ss.RUnlock()
+			ss.Unlock()
 
 			if pick == nil {
 				Errorf("STAN: [Client:%s] Unable to find queue subscriber.", clientID)
