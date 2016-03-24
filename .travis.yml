@@ -3,10 +3,8 @@ sudo: false
 go:
 - 1.5
 install:
-- git config --global url."git@github.com:".insteadOf "https://github.com/"
 - go get -t ./...
 - go get github.com/nats-io/gnatsd
-- go get github.com/nats-io/stanserver
 script:
 - go fmt ./...
 - go vet ./...
