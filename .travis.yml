@@ -5,8 +5,10 @@ go:
 install:
 - go get -t ./...
 - go get github.com/nats-io/gnatsd
+- go get github.com/nats-io/stanserver
 script:
 - go fmt ./...
 - go vet ./...
 - go test -v
 #- go test -v --race
+#

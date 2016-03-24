@@ -59,7 +59,7 @@ func BenchmarkPublishAsync(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		if _, err := sc.PublishAsync("foo", hw, ah); err != nil {
-			fmt.Printf("Client status %v, Server status %v\n", s.nc.Status(), (sc.(*conn)).nc.Status())
+			//fmt.Printf("Client status %v, Server status %v\n", s.nc.Status(), (sc.(*conn)).nc.Status())
 			fmt.Printf("len(ackmap) = %d\n", len(sc.(*conn).pubAckMap))
 
 			b.Fatalf("Error from PublishAsync: %v\n", err)

@@ -20,9 +20,15 @@ import (
 
 	"github.com/nats-io/nats"
 	"github.com/nats-io/stan/pb"
+	"github.com/nats-io/stanserver/server"
+	"github.com/nats-io/stanserver/test"
 
 	natsd "github.com/nats-io/gnatsd/test"
 )
+
+func RunServer(ID string) *server.StanServer {
+	return test.RunServer(ID)
+}
 
 // Dumb wait program to sync on callbacks, etc... Will timeout
 func Wait(ch chan bool) error {
@@ -1278,7 +1284,7 @@ func TestDurableSubscriber(t *testing.T) {
 
 	// Check that durables can not be subscribed to again by same client.
 	_, err = sc.Subscribe("foo", nil, DurableName("durable-foo"))
-	if err == nil || err.Error() != ErrDupDurable.Error() {
+	if err == nil || err.Error() != server.ErrDupDurable.Error() {
 		t.Fatalf("Expected ErrDupSubscription error, got %v\n", err)
 	}
 
@@ -1743,7 +1749,7 @@ func TestMaxChannels(t *testing.T) {
 	// FIXME(dlc) - Eventually configurable, but wanted test in place.
 	// Send to DefaultChannelLimit + 1
 	// These all should work fine
-	for i := 0; i < DefaultChannelLimit; i++ {
+	for i := 0; i < server.DefaultChannelLimit; i++ {
 		subject = fmt.Sprintf("CHAN-%d", i)
 		sc.PublishAsync(subject, hw, nil)
 	}
