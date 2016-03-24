@@ -590,12 +590,10 @@ func (s *stanServer) processClientPublish(m *nats.Msg) {
 // FIXME(dlc) - place holder to pick sub that has least outstanding, should just sort,
 // or use insertion sort, etc.
 func findBestQueueSub(sl []*subState) (rsub *subState) {
-	var firstSubInList *subState
 	for _, sub := range sl {
 
 		if rsub == nil {
 			rsub = sub
-			firstSubInList = rsub
 			continue
 		}
 
@@ -612,8 +610,8 @@ func findBestQueueSub(sl []*subState) (rsub *subState) {
 		}
 	}
 
-	if firstSubInList != nil && rsub == firstSubInList {
-		len := len(sl)
+	len := len(sl)
+	if len > 1 && rsub == sl[0] {
 		copy(sl, sl[1:len])
 		sl[len-1] = rsub
 	}
