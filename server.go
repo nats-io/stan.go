@@ -601,13 +601,19 @@ func findBestQueueSub(sl []*subState) (rsub *subState) {
 		rOut := len(rsub.acksPending)
 		rsub.RUnlock()
 
-		sub.Lock()
+		sub.RLock()
 		sOut := len(sub.acksPending)
-		sub.Unlock()
+		sub.RUnlock()
 
 		if sOut < rOut {
 			rsub = sub
 		}
+	}
+
+	len := len(sl)
+	if len > 1 && rsub == sl[0] {
+		copy(sl, sl[1:len])
+		sl[len-1] = rsub
 	}
 	return
 }
@@ -749,9 +755,9 @@ func (s *stanServer) performRedelivery(sub *subState, checkExpiration bool) {
 			cs := s.channels.Lookup(subject)
 			ss := cs.subs
 
-			ss.RLock()
+			ss.Lock()
 			pick = findBestQueueSub(qs.subs)
-			ss.RUnlock()
+			ss.Unlock()
 
 			if pick == nil {
 				Errorf("STAN: [Client:%s] Unable to find queue subscriber.", clientID)
