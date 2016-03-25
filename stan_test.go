@@ -19,9 +19,9 @@ import (
 	"time"
 
 	"github.com/nats-io/nats"
+	"github.com/nats-io/stan-server/server"
+	"github.com/nats-io/stan-server/test"
 	"github.com/nats-io/stan/pb"
-	"github.com/nats-io/stanserver/server"
-	"github.com/nats-io/stanserver/test"
 
 	natsd "github.com/nats-io/gnatsd/test"
 )
