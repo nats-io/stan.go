@@ -2,6 +2,9 @@ language: go
 sudo: false
 go:
 - 1.5
+before_install:
+- echo -e "machine github.com\n login $TRAVIS_CI_TOKEN" >>
+  ~/.netrc
 install:
 - go get -t ./...
 - go get github.com/nats-io/gnatsd
@@ -10,5 +13,6 @@ script:
 - go fmt ./...
 - go vet ./...
 - go test -v
-#- go test -v --race
-#
+env:
+  global:
+    secure: KEDPc6qe850+2bfApJHifCFG4d+9b4ZOOSgpTL7Xy8Raw0ZL5jC8Egdl1Ds+TDahJ8ptxoMbyIYHYdVEvohJsIeFRmYZmStCo2oNkdbbGZgM1XTNybo/RxKtXtW+9Fr/8SJOBrworNacq2wrtKAsQuxSaZfw1hET9wUqZaixwJlaGlN5xDqiZbOkFF5q8oRt9hguPUs13XqjPQBH6m/F8AfCtiipwxP/jgYopTtTGbkg3ZQi/tpHceQg0DnZrVwT3TWR4o6Aqqvls2yCVHCUyWX14m6gLyE+7utxDRUdw46TWaeTpUtjpAcg3zFEJrjf/KG7WJ0EASqcEN2wWfmB3VdDVCfz8vMiYWcX9I8emcr7Q6RDA+JXqSRM13lcqrD5CrBZlJkt3CyYDZ+A8E8p4Etc0yvhUAbsAnjZkwDwdzntMVgvaAuu0pX2zus5H9LAfPiv7QnyUyWWx8jqpUYQ73iT7tefPHy+lhKwl9HYqax5jIbyz+okX5DwIr0mDgSSHlvM/umrAUl3h8f2D1nZ/m+tynshr+lNQYgFhH1vwW/0JBJWenvpMPtaY/wALVz01r90JmdbTAY1mnpLMjLeaC8s+4GOurPm0JHGly/qcMXxSv0OPt47uUkDTo6/ebCLJzbQlHl3kSYquyiXmw5j+n7kOd68e7VokWy+6PmQDRE=
