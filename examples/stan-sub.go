@@ -131,7 +131,7 @@ func main() {
 	signal.Notify(signalChan, os.Interrupt)
 	go func() {
 		for _ = range signalChan {
-			fmt.Println("\nReceived an interrupt, cleaning up...\n")
+			fmt.Println("\nReceived an interrupt, unsubscribing and closing connection...\n")
 			sub.Unsubscribe()
 			sc.Close()
 			cleanupDone <- true
