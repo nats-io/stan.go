@@ -20,13 +20,12 @@ Usage: stan-pub [options] <subject> <message>
 Options:
 	-s, --server   <url>            STAN server URL(s)
 	-c, --cluster  <cluster name>   STAN cluster name
-	-id,--clientid <client ID>      Unique STAN client ID
+	-id,--clientid <client ID>      STAN client ID
 	-a, --async                     Asynchronous publish mode
 `
 
 // NOTE: Use tls scheme for TLS, e.g. stan-pub -s tls://demo.nats.io:4443 foo hello
 func usage() {
-	//	log.Fatalf("Usage: stan-pub [-s server (%s)] [-c cluster <cluster ID>] [-id <client ID>] <subject> <msg> \n", stan.DefaultNatsURL)
 	fmt.Printf("%s\n", usageStr)
 	os.Exit(0)
 }
@@ -34,16 +33,16 @@ func usage() {
 func main() {
 	opts := stan.DefaultOptions
 
-	var clusterId string
-	var clientId string
+	var clusterID string
+	var clientID string
 	var async bool
 
 	flag.StringVar(&opts.NatsURL, "s", stan.DefaultNatsURL, "The nats server URLs (separated by comma)")
 	flag.StringVar(&opts.NatsURL, "server", stan.DefaultNatsURL, "The nats server URLs (separated by comma)")
-	flag.StringVar(&clusterId, "c", "test-cluster", "The STAN cluster ID")
-	flag.StringVar(&clusterId, "cluster", "", "The STAN cluster ID")
-	flag.StringVar(&clientId, "id", "", "The STAN client ID to connect with")
-	flag.StringVar(&clientId, "clientid", "", "The STAN client ID to connect with")
+	flag.StringVar(&clusterID, "c", "test-cluster", "The STAN cluster ID")
+	flag.StringVar(&clusterID, "cluster", "test-cluster", "The STAN cluster ID")
+	flag.StringVar(&clientID, "id", "stan-pub", "The STAN client ID to connect with")
+	flag.StringVar(&clientID, "clientid", "stan-pub", "The STAN client ID to connect with")
 	flag.BoolVar(&async, "a", false, "Publish asynchronousely")
 	flag.BoolVar(&async, "async", false, "Publish asynchronousely")
 
@@ -56,7 +55,7 @@ func main() {
 		usage()
 	}
 
-	sc, err := stan.Connect(clusterId, clientId)
+	sc, err := stan.Connect(clusterID, clientID)
 	if err != nil {
 		log.Fatal(err)
 	}
