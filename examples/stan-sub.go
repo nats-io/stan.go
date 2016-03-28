@@ -28,10 +28,9 @@ Subscription Options:
 	-seq <seqno>                    Start at seqno
 	-all                            Deliver all available messages
 	-last                           Deliver starting with last published message
-	-new                            Deliver only new messages
 	-since <duration>               Deliver messages in last interval (e.g. 1s, 1hr)
 	          (for more information: https://golang.org/pkg/time/#ParseDuration)
-	-durable                        Durable subscriber name
+	-durable <name>                 Durable subscriber name
 `
 
 // NOTE: Use tls scheme for TLS, e.g. stan-sub -s tls://demo.nats.io:4443 foo
