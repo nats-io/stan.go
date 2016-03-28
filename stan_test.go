@@ -703,7 +703,7 @@ func TestSubscriptionStartAtWithEmptyStore(t *testing.T) {
 	sub, err := sc.Subscribe("foo", mcb, StartAtTime(startTime))
 	if err == nil {
 		sub.Unsubscribe()
-		t.Fatalf("Expected error on Subscribe; did not recieve one.")
+		t.Fatalf("Expected error on Subscribe; did not receive one.")
 	}
 
 	sub, err = sc.Subscribe("foo", mcb, StartAtSequence(0))
