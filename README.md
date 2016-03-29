@@ -5,19 +5,19 @@ STAN is an extremely performant, lightweight reliable streaming platform powered
 [![License MIT](https://img.shields.io/npm/l/express.svg)](http://opensource.org/licenses/MIT) 
 [![Build Status](https://travis-ci.com/nats-io/stan.svg?token=UGjrGa8sFWGQcHSJeAvp&branch=master)](http://travis-ci.com/nats-io/stan)
 
-[Project Design Document](https://docs.google.com/document/d/1keDwK35YQnOXXKKy2HVV2oOnvEUPFyypT-Tplh8F89c/edit)
-
 STAN provides the following high-level feature set:
-- Log based.
-- At-Least-Once Delivery model, giving reliable message delivery.
-- Rate matched on a per subscription basis.
+- Log based persistence
+- At-Least-Once Delivery model, giving reliable message delivery
+- Rate matched on a per subscription basis
 - Replay/Restart
 - Last Value Semantics
 
 ## Notes and Known Issues for STAN Preview
 
-- For the Preview, `stan-server` is provided in binary form [here](https://github.com/nats-io/stan-server-preview/releases)
+- For the Preview, `stan-server` is provided in binary form for Linux and Mac [here](https://github.com/nats-io/stan-server-preview/releases)
 - Please report all issues via the [Issue Tracker](https://github.com/nats-io/stan/issues)
+- When an application crashes and immediately tries to reconnect, there is a known issue where the server may prevent it from doing so. This will be fixed shortly.
+- Persistence is memory based at this point in development; file based persistence is underway and will be made available soon.
 - Please direct all questions to the #stan-preview channel on natsio.slack.com, or simply raise issues in the issue tracker
 - Time- and sequence-based subscriptions are exact. Requesting a time or seqno before the earliest stored message for a subject will result in an error (in SubscriptionRequest.Error)
 
@@ -49,7 +49,6 @@ sc.Subscribe("foo", func(m *nats.Msg) {
 sub.Unsubscribe()
 
 // Close connection
-sc, _ := stan.Connect(clusterID, clientID)
 sc.Close()
 ```
 
@@ -90,7 +89,10 @@ sub, err := sc.Subscribe("foo", func(m *stan.Msg) {
 
 ### Durable Subscriptions
 
-Replay of messages offers great flexibility for clients wishing to begin processing at some earlier point in the data stream. However, some clients just need to (e.g.) pick up where they left off from an earlier session. Durable subscriptions allow clients to assign a durable name to a subscription when it is created. Doing this causes the STAN server to track the last acknowledged message for that clientID + durable name.
+Replay of messages offers great flexibility for clients wishing to begin processing at some earlier point in the data stream. 
+However, some clients just need to pick up where they left off from an earlier session, without having to manually track their position in the stream of messages. 
+Durable subscriptions allow clients to assign a durable name to a subscription when it is created. 
+Doing this causes the STAN server to track the last acknowledged message for that clientID + durable name, so that only messages since the last acknowledged message will be delivered to the client.
 
 ```go
 sc, _ := stan.Connect("test-cluster", "client-123")
