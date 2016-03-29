@@ -26,10 +26,9 @@ STAN provides the following high-level feature set:
 ```bash
 # Go client
 go get github.com/nats-io/stan
-
-# Server
-go get github.com/nats-io/stan-server
 ```
+
+For the Preview, `stan-server` is provided in binary form for Linux and Mac [here](https://github.com/nats-io/stan-server-preview/releases)
 
 ## Basic Usage
 
