@@ -12,13 +12,13 @@ STAN provides the following high-level feature set:
 - Replay/Restart
 - Last Value Semantics
 
-## Notes and Known Issues for STAN Preview
+## Notes
 
-- For the Preview, `stan-server` is provided in binary form for Linux and Mac [here](https://github.com/nats-io/stan-server-preview/releases)
-- Please report all issues via the [Issue Tracker](https://github.com/nats-io/stan/issues)
+- Please raise questions/issues via the [Issue Tracker](https://github.com/nats-io/stan/issues) or via the #stan-preview channel on natsio.slack.com (contact larry@apcera.com or brian@apcera.com for access)
+
+## Known Issues
 - When an application crashes and immediately tries to reconnect, there is a known issue where the server may prevent it from doing so. This will be fixed shortly.
 - Persistence is memory based at this point in development; file based persistence is underway and will be made available soon.
-- Please direct all questions to the #stan-preview channel on natsio.slack.com, or simply raise issues in the issue tracker
 - Time- and sequence-based subscriptions are exact. Requesting a time or seqno before the earliest stored message for a subject will result in an error (in SubscriptionRequest.Error)
 
 ## Installation
