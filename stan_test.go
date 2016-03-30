@@ -687,6 +687,44 @@ func TestSubscriptionStartAtTime(t *testing.T) {
 	}
 }
 
+func TestSubscriptionStartAtWithEmptyStore(t *testing.T) {
+	// Run a STAN server
+	s := RunServer(clusterName)
+	defer s.Shutdown()
+
+	sc := NewDefaultConnection(t)
+	defer sc.Close()
+
+	startTime := time.Now()
+
+	mcb := func(m *Msg) {
+	}
+
+	sub, err := sc.Subscribe("foo", mcb, StartAtTime(startTime))
+	if err == nil {
+		sub.Unsubscribe()
+		t.Fatalf("Expected error on Subscribe; did not receive one.")
+	}
+
+	sub, err = sc.Subscribe("foo", mcb, StartAtSequence(0))
+	if err == nil {
+		sub.Unsubscribe()
+		t.Fatalf("Expected error on Subscribe; did not recieve one.")
+	}
+
+	sub, err = sc.Subscribe("foo", mcb, StartWithLastReceived())
+	if err != nil {
+		t.Fatalf("Expected no error on Subscribe, got %v\n", err)
+	}
+
+	sub, err = sc.Subscribe("foo", mcb)
+	if err != nil {
+		t.Fatalf("Expected no error on Subscribe, got %v\n", err)
+	}
+	sub.Unsubscribe()
+
+}
+
 func TestSubscriptionStartAtFirst(t *testing.T) {
 	// Run a STAN server
 	s := RunServer(clusterName)
