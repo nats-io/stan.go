@@ -31,6 +31,7 @@ Subscription Options:
 	--since <duration>              Deliver messages in last interval (e.g. 1s, 1hr)
 	         (for more information: https://golang.org/pkg/time/#ParseDuration)
 	--durable <name>                Durable subscriber name
+	--unsubscribe                   Unsubscribe the durable on exit
 `
 
 // NOTE: Use tls scheme for TLS, e.g. stan-sub -s tls://demo.nats.io:4443 foo
@@ -54,6 +55,7 @@ func main() {
 	var deliverLast bool
 	var durable string
 	var qgroup string
+	var unsubscribe bool
 
 	//	defaultID := fmt.Sprintf("client.%s", nuid.Next())
 
@@ -70,7 +72,8 @@ func main() {
 	flag.BoolVar(&deliverLast, "last", false, "Start with last value")
 	flag.StringVar(&startDelta, "since", "", "Deliver messages since specified time offset")
 	flag.StringVar(&durable, "durable", "", "Durable subscriber name")
-	flag.StringVar(&durable, "qgroup", "", "Queue group name")
+	flag.StringVar(&qgroup, "qgroup", "", "Queue group name")
+	flag.BoolVar(&unsubscribe, "unsubscribe", false, "Unsubscribe the durable on exit")
 
 	log.SetFlags(0)
 	flag.Usage = usage
@@ -132,7 +135,10 @@ func main() {
 	go func() {
 		for _ = range signalChan {
 			fmt.Println("\nReceived an interrupt, unsubscribing and closing connection...\n")
-			sub.Unsubscribe()
+			// Do not unsubscribe a durable on exit, except if asked to.
+			if durable == "" || unsubscribe {
+				sub.Unsubscribe()
+			}
 			sc.Close()
 			cleanupDone <- true
 		}
