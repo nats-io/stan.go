@@ -1725,7 +1725,7 @@ func TestNoDuplicatesOnSubscriberStart(t *testing.T) {
 
 	mcb := func(m *Msg) {
 		// signal when we've reached the expected messages count
-		if nr := atomic.AddInt32(&received, 1); nr == sent {
+		if nr := atomic.AddInt32(&received, 1); nr == atomic.LoadInt32(&sent) {
 			ch <- true
 		}
 	}
