@@ -1438,6 +1438,7 @@ func TestPubMultiQueueSubWithSlowSubscriber(t *testing.T) {
 	defer sc.Close()
 
 	ch := make(chan bool)
+	s2BlockedCh := make(chan bool)
 	received := int32(0)
 	s1Received := int32(0)
 	s2Received := int32(0)
@@ -1460,8 +1461,8 @@ func TestPubMultiQueueSubWithSlowSubscriber(t *testing.T) {
 		if m.Sub == s1 {
 			atomic.AddInt32(&s1Received, 1)
 		} else if m.Sub == s2 {
-			// Slow down this subscriber
-			time.Sleep(500 * time.Millisecond)
+			// Block this subscriber
+			<-s2BlockedCh
 			atomic.AddInt32(&s2Received, 1)
 		} else {
 			t.Fatalf("Received message on unknown subscription")
@@ -1489,6 +1490,9 @@ func TestPubMultiQueueSubWithSlowSubscriber(t *testing.T) {
 		data := []byte(fmt.Sprintf("%d", i))
 		sc.Publish("foo", data)
 	}
+
+	close(s2BlockedCh)
+
 	if err := WaitTime(ch, 10*time.Second); err != nil {
 		t.Fatal("Did not receive our messages")
 	}
