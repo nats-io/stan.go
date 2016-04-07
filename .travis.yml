@@ -10,7 +10,7 @@ install:
 - mkdir -p "$DST"
 - git clone --depth=1 --quiet https://github.com/nats-io/stan-server.git "$DST"/stan-server
 - go get -t ./...
-- go get golang.org/x/tools/cmd/vet
+#- go get golang.org/x/tools/cmd/vet ## no longer needed
 - go get golang.org/x/tools/cmd/cover
 - go get github.com/mattn/goveralls
 script:
