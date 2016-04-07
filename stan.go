@@ -364,15 +364,19 @@ func (sc *conn) PublishAsyncWithReply(subject, reply string, data []byte, ah Ack
 
 // removeAck removes the ack from the pubAckMap and cancels any state, e.g. timers
 func (sc *conn) removeAck(guid string) *ack {
+	var t *time.Timer
 	sc.Lock()
 	a := sc.pubAckMap[guid]
+	if a != nil {
+		t = a.t
+	}
 	delete(sc.pubAckMap, guid)
 	pac := sc.pubAckChan
 	sc.Unlock()
 
 	// Cancel timer if needed.
-	if a != nil && a.t != nil {
-		a.t.Stop()
+	if t != nil {
+		t.Stop()
 	}
 
 	// Remove from channel to unblock PublishAsync
