@@ -4,7 +4,6 @@
 rm -rf ./cov
 mkdir cov
 go test -v -covermode=atomic -coverprofile=./cov/stan.out
-#go test -v -covermode=atomic -coverprofile=./cov/test.out -coverpkg=github.com/nats-io/stan ./test
 gocovmerge ./cov/*.out > acc.out
 rm -rf ./cov
 

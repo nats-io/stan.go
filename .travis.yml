@@ -7,7 +7,6 @@ before_install:
 install:
 - go get -t ./...
 - go get github.com/nats-io/stan-server
-- go get golang.org/x/tools/cmd/cover
 - go get github.com/mattn/goveralls
 - go get github.com/wadey/gocovmerge
 script:
