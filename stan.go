@@ -267,7 +267,12 @@ func (sc *conn) Close() error {
 // Process a heartbeat from the STAN cluster
 func (sc *conn) processHeartBeat(m *nats.Msg) {
 	// No payload assumed, just reply.
-	sc.nc.Publish(m.Reply, nil)
+	sc.Lock()
+	nc := sc.nc
+	sc.Unlock()
+	if nc != nil {
+		nc.Publish(m.Reply, nil)
+	}
 }
 
 // Process an ack from the STAN cluster
