@@ -1801,3 +1801,14 @@ func TestMaxChannels(t *testing.T) {
 		t.Fatalf("Expected an error signalling too many channels\n")
 	}
 }
+
+func TestRaceOnClose(t *testing.T) {
+	s := RunServer(clusterName)
+	defer s.Shutdown()
+
+	sc := NewDefaultConnection(t)
+	defer sc.Close()
+
+	// Seems that this sleep makes it happen all the time.
+	time.Sleep(1250 * time.Millisecond)
+}
