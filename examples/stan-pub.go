@@ -74,17 +74,23 @@ func main() {
 			log.Fatalf("Error in server ack for guid %s: %v\n", lguid, err)
 		}
 		if lguid != guid {
-			log.Fatal("Expected a matching guid in ack callback, got %s vs %s\n", lguid, guid)
+			log.Fatalf("Expected a matching guid in ack callback, got %s vs %s\n", lguid, guid)
 		}
 		ch <- true
 	}
 
 	if async != true {
-		sc.Publish(subj, msg)
+		err = sc.Publish(subj, msg)
+		if err != nil {
+			log.Fatalf("Error during publish: %v\n", err)
+		}
 		log.Printf("Published [%s] : '%s'\n", subj, msg)
 	} else {
 		glock.Lock()
-		guid, _ = sc.PublishAsync(subj, msg, acb)
+		guid, err = sc.PublishAsync(subj, msg, acb)
+		if err != nil {
+			log.Fatalf("Error during async publish: %v\n", err)
+		}
 		glock.Unlock()
 		if guid == "" {
 			log.Fatal("Expected non-empty guid to be returned.")
