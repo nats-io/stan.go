@@ -18,10 +18,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/nats-io/go-stan/pb"
 	"github.com/nats-io/nats"
 	"github.com/nats-io/stan-server/server"
 	"github.com/nats-io/stan-server/test"
-	"github.com/nats-io/stan/pb"
 
 	natsd "github.com/nats-io/gnatsd/test"
 )
