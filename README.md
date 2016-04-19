@@ -3,8 +3,8 @@
 STAN is an extremely performant, lightweight reliable streaming platform powered by [NATS](https://nats.io).
 
 [![License MIT](https://img.shields.io/npm/l/express.svg)](http://opensource.org/licenses/MIT) 
-[![Build Status](https://travis-ci.com/nats-io/stan.svg?token=UGjrGa8sFWGQcHSJeAvp&branch=master)](http://travis-ci.com/nats-io/stan)
-[![Coverage Status](https://coveralls.io/repos/nats-io/stan/badge.svg?branch=master&t=vbqGz4)](https://coveralls.io/r/nats-io/stan?branch=master)
+[![Build Status](https://travis-ci.com/nats-io/go-stan.svg?token=UGjrGa8sFWGQcHSJeAvp&branch=master)](http://travis-ci.com/nats-io/go-stan)
+[![Coverage Status](https://coveralls.io/repos/nats-io/go-stan/badge.svg?branch=master&t=vbqGz4)](https://coveralls.io/r/nats-io/go-stan?branch=master)
 
 STAN provides the following high-level feature set:
 - Log based persistence
