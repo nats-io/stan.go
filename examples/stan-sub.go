@@ -11,8 +11,8 @@ import (
 	"os/signal"
 	"time"
 
-	. "github.com/nats-io/stan"
-	"github.com/nats-io/stan/pb"
+	. "github.com/nats-io/go-stan"
+	"github.com/nats-io/go-stan/pb"
 )
 
 var usageStr = `

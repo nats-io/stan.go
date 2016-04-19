@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/nats-io/go-stan/pb"
 	"github.com/nats-io/nats"
-	"github.com/nats-io/stan/pb"
 )
 
 const (

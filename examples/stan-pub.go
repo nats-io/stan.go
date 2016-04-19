@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/nats-io/stan"
+	"github.com/nats-io/go-stan"
 )
 
 var usageStr = `
