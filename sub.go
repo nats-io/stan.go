@@ -300,7 +300,8 @@ func (sub *subscription) Unsubscribe() error {
 	return nil
 }
 
-// Manually Ack a Message.
+// Ack manually acknowledges a message.
+// The subscriber had to be created with SetManualAckMode() option.
 func (msg *Msg) Ack() error {
 	if msg == nil {
 		return ErrNilMsg
@@ -321,6 +322,13 @@ func (msg *Msg) Ack() error {
 	if sc == nil {
 		return ErrBadSubscription
 	}
+	// Get nc from the connection (needs locking to avoid race)
+	sc.Lock()
+	nc := sc.nc
+	sc.Unlock()
+	if nc == nil {
+		return ErrBadSubscription
+	}
 	if !isManualAck {
 		return ErrManualAck
 	}
@@ -328,5 +336,5 @@ func (msg *Msg) Ack() error {
 	// Ack here.
 	ack := &pb.Ack{Subject: msg.Subject, Sequence: msg.Sequence}
 	b, _ := ack.Marshal()
-	return sc.nc.Publish(ackSubject, b)
+	return nc.Publish(ackSubject, b)
 }
