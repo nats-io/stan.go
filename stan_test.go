@@ -1266,6 +1266,7 @@ func TestDurableSubscriber(t *testing.T) {
 	hw := []byte("Hello World")
 
 	// Capture the messages that are delivered.
+	var msgsGuard sync.Mutex
 	savedMsgs := make([]*Msg, 0, toSend)
 
 	for i := int32(0); i < toSend; i++ {
@@ -1277,10 +1278,15 @@ func TestDurableSubscriber(t *testing.T) {
 
 	_, err := sc.Subscribe("foo", func(m *Msg) {
 		if nr := atomic.AddInt32(&received, 1); nr == 10 {
+			// Reduce risk of test failure by allowing server to
+			// process acks before processing Close() requesting
+			time.Sleep(500 * time.Millisecond)
 			sc.Close()
 			ch <- true
 		} else {
+			msgsGuard.Lock()
 			savedMsgs = append(savedMsgs, m)
+			msgsGuard.Unlock()
 		}
 	}, DeliverAllAvailable(), DurableName("durable-foo"))
 	if err != nil {
@@ -1311,7 +1317,9 @@ func TestDurableSubscriber(t *testing.T) {
 
 	// Create the same durable subscription.
 	_, err = sc.Subscribe("foo", func(m *Msg) {
+		msgsGuard.Lock()
 		savedMsgs = append(savedMsgs, m)
+		msgsGuard.Unlock()
 		if nr := atomic.AddInt32(&received, 1); nr == toSend {
 			ch <- true
 		}
@@ -1339,10 +1347,15 @@ func TestDurableSubscriber(t *testing.T) {
 	if nr := atomic.LoadInt32(&received); nr != toSend {
 		t.Fatalf("Expected to get %d messages, got %d\n", toSend, nr)
 	}
-	if len(savedMsgs) != int(toSend) {
-		t.Fatalf("Expected len(savedMsgs) to be %d, got %d\n", toSend, len(savedMsgs))
+	msgsGuard.Lock()
+	numSaved := len(savedMsgs)
+	msgsGuard.Unlock()
+	if numSaved != int(toSend) {
+		t.Fatalf("Expected len(savedMsgs) to be %d, got %d\n", toSend, numSaved)
 	}
 	// Check we received them in order
+	msgsGuard.Lock()
+	defer msgsGuard.Unlock()
 	for i, m := range savedMsgs {
 		seqExpected := uint64(i + 1)
 		if m.Sequence != seqExpected {
