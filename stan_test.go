@@ -1825,3 +1825,31 @@ func TestRaceOnClose(t *testing.T) {
 	// Seems that this sleep makes it happen all the time.
 	time.Sleep(1250 * time.Millisecond)
 }
+
+func TestRaceAckOnClose(t *testing.T) {
+	s := RunServer(clusterName)
+	defer s.Shutdown()
+
+	sc := NewDefaultConnection(t)
+	defer sc.Close()
+
+	toSend := 100
+
+	// Send our messages
+	for i := 0; i < toSend; i++ {
+		if err := sc.Publish("foo", []byte("msg")); err != nil {
+			t.Fatalf("Unexpected error on publish: %v", err)
+		}
+	}
+
+	cb := func(m *Msg) {
+		m.Ack()
+	}
+	if _, err := sc.Subscribe("foo", cb, SetManualAckMode(),
+		DeliverAllAvailable()); err != nil {
+		t.Fatalf("Unexpected error on subscribe: %v", err)
+	}
+	// Close while ack'ing may happen
+	time.Sleep(10 * time.Millisecond)
+	sc.Close()
+}
