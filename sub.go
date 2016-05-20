@@ -1,6 +1,6 @@
 // Copyright 2016 Apcera Inc. All rights reserved.
 
-// A Go client for the STAN/NATS messaging system (https://nats.io).
+// Package stan is a Go client for the STAN/NATS messaging system (https://nats.io).
 package stan
 
 import (
@@ -13,11 +13,13 @@ import (
 )
 
 const (
-	DefaultAckWait     = 30 * time.Second
+	// DefaultAckWait indicates how long the server should wait for an ACK before resending a message
+	DefaultAckWait = 30 * time.Second
+	// DefaultMaxInflight indicates how many messages with outstanding ACKs the server can send
 	DefaultMaxInflight = 1024
 )
 
-// Client defined Msg, which includes proto, then back link to subscription.
+// Msg is the client defined message, which includes proto, then back link to subscription.
 type Msg struct {
 	pb.MsgProto // MsgProto: Seq, Subject, Reply[opt], Data, Timestamp, CRC32[opt]
 	Sub         Subscription
@@ -69,6 +71,7 @@ type SubscriptionOptions struct {
 	ManualAcks bool
 }
 
+// DefaultSubscriptionOptions are the default subscriptions' options
 var DefaultSubscriptionOptions = SubscriptionOptions{
 	MaxInflight: DefaultMaxInflight,
 	AckWait:     DefaultAckWait,
@@ -92,7 +95,7 @@ func AckWait(t time.Duration) SubscriptionOption {
 	}
 }
 
-// StartPosition sets the desired start position for the message stream.
+// StartAt sets the desired start position for the message stream.
 func StartAt(sp pb.StartPosition) SubscriptionOption {
 	return func(o *SubscriptionOptions) error {
 		o.StartAt = sp
@@ -100,7 +103,7 @@ func StartAt(sp pb.StartPosition) SubscriptionOption {
 	}
 }
 
-// StartSequence sets the desired start sequence position and state.
+// StartAtSequence sets the desired start sequence position and state.
 func StartAtSequence(seq uint64) SubscriptionOption {
 	return func(o *SubscriptionOptions) error {
 		o.StartAt = pb.StartPosition_SequenceStart
@@ -193,11 +196,11 @@ func (sc *conn) subscribe(subject, qgroup string, cb MsgHandler, options ...Subs
 	defer sub.Unlock()
 
 	// Listen for actual messages.
-	if nsub, err := nc.Subscribe(sub.inbox, sc.processMsg); err != nil {
+	nsub, err := nc.Subscribe(sub.inbox, sc.processMsg)
+	if err != nil {
 		return nil, err
-	} else {
-		sub.inboxSub = nsub
 	}
+	sub.inboxSub = nsub
 
 	// Create a subscription request
 	// FIXME(dlc) add others.

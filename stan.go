@@ -1,6 +1,6 @@
 // Copyright 2016 Apcera Inc. All rights reserved.
 
-// A Go client for the STAN/NATS messaging system (https://nats.io).
+// Package stan is a Go client for the STAN/NATS messaging system (https://nats.io).
 package stan
 
 import (
@@ -15,12 +15,20 @@ import (
 	"github.com/nats-io/nuid"
 )
 
+// Version is the STAN Go Client version
+const Version = "0.0.1"
+
 const (
-	Version                   = "0.0.1"
-	DefaultNatsURL            = "nats://localhost:4222"
-	DefaultConnectWait        = 2 * time.Second
-	DefaultDiscoverPrefix     = "_STAN.discover"
-	DefaultACKPrefix          = "_STAN.acks"
+	// DefaultNatsURL is the default URL the client connects to
+	DefaultNatsURL = "nats://localhost:4222"
+	// DefaultConnectWait is the default timeout used for the connect operation
+	DefaultConnectWait = 2 * time.Second
+	// DefaultDiscoverPrefix is the prefix subject used to connect to the STAN server
+	DefaultDiscoverPrefix = "_STAN.discover"
+	// DefaultACKPrefix is the prefix subject used to send ACKs to the STAN server
+	DefaultACKPrefix = "_STAN.acks"
+	// DefaultMaxPubAcksInflight is the default maximum number of published messages
+	// without outstanding ACKs from the server
 	DefaultMaxPubAcksInflight = 16384
 )
 
@@ -72,6 +80,7 @@ type Options struct {
 	MaxPubAcksInflight int
 }
 
+// DefaultOptions are the STAN client's default options
 var DefaultOptions = Options{
 	NatsURL:            DefaultNatsURL,
 	ConnectTimeout:     DefaultConnectWait,
@@ -148,12 +157,12 @@ func Connect(stanClusterID, clientID string, options ...Option) (Conn, error) {
 	c.nc = c.opts.NatsConn
 	// Create a NATS connection if it doesn't exist.
 	if c.nc == nil {
-		if nc, err := nats.Connect(c.opts.NatsURL); err != nil {
+		nc, err := nats.Connect(c.opts.NatsURL)
+		if err != nil {
 			return nil, err
-		} else {
-			c.nc = nc
-			c.ncOwned = true
 		}
+		c.nc = nc
+		c.ncOwned = true
 	}
 	// Create a heartbeat inbox
 	hbInbox := nats.NewInbox()
@@ -169,13 +178,11 @@ func Connect(stanClusterID, clientID string, options ...Option) (Conn, error) {
 	b, _ := req.Marshal()
 	reply, err := c.nc.Request(discoverSubject, b, c.opts.ConnectTimeout)
 	if err != nil {
+		c.Close()
 		if err == nats.ErrTimeout {
-			c.Close()
 			return nil, ErrConnectReqTimeout
-		} else {
-			c.Close()
-			return nil, err
 		}
+		return nil, err
 	}
 	// Process the response, grab server pubPrefix
 	cr := &pb.ConnectResponse{}
@@ -249,9 +256,8 @@ func (sc *conn) Close() error {
 	if err != nil {
 		if err == nats.ErrTimeout {
 			return ErrCloseReqTimeout
-		} else {
-			return err
 		}
+		return err
 	}
 	cr := &pb.CloseResponse{}
 	err = cr.Unmarshal(reply.Data)
@@ -389,11 +395,6 @@ func (sc *conn) removeAck(guid string) *ack {
 		<-pac
 	}
 	return a
-}
-
-// Helper function to produce time.Time from timestamp ns.
-func (m *Msg) Time() time.Time {
-	return time.Unix(0, m.Timestamp)
 }
 
 // Process an msg from the STAN cluster
