@@ -223,16 +223,16 @@ func (sc *conn) subscribe(subject, qgroup string, cb MsgHandler, options ...Subs
 	b, _ := sr.Marshal()
 	reply, err := sc.nc.Request(sc.subRequests, b, 2*time.Second)
 	if err != nil {
-		// FIXME(dlc) unwind subscription from above.
+		sub.inboxSub.Unsubscribe()
 		return nil, err
 	}
 	r := &pb.SubscriptionResponse{}
 	if err := r.Unmarshal(reply.Data); err != nil {
-		// FIXME(dlc) unwind subscription from above.
+		sub.inboxSub.Unsubscribe()
 		return nil, err
 	}
 	if r.Error != "" {
-		// FIXME(dlc) unwind subscription from above.
+		sub.inboxSub.Unsubscribe()
 		return nil, errors.New(r.Error)
 	}
 	sub.ackInbox = r.AckInbox
@@ -323,11 +323,11 @@ func (msg *Msg) Ack() error {
 		return ErrBadSubscription
 	}
 	// Get nc from the connection (needs locking to avoid race)
-	sc.Lock()
+	sc.RLock()
 	nc := sc.nc
-	sc.Unlock()
+	sc.RUnlock()
 	if nc == nil {
-		return ErrBadSubscription
+		return ErrBadConnection
 	}
 	if !isManualAck {
 		return ErrManualAck
