@@ -44,15 +44,6 @@ type Conn interface {
 	Close() error
 }
 
-// Pools
-var (
-	errChPool = sync.Pool{
-		New: func() interface{} {
-			return make(chan error)
-		},
-	}
-)
-
 // Errors
 var (
 	ErrConnectReqTimeout = errors.New("stan: connect request timeout")
@@ -325,12 +316,11 @@ func (sc *conn) PublishAsync(subject string, data []byte, ah AckHandler) (string
 
 // PublishWithReply will publish to the cluster and wait for an ACK.
 func (sc *conn) PublishWithReply(subject, reply string, data []byte) error {
-	ch := errChPool.Get().(chan error)
+	ch := make(chan error)
 	_, err := sc.publishAsyncWithReply(subject, reply, data, nil, ch)
 	if err == nil {
 		err = <-ch
 	}
-	errChPool.Put(ch)
 	return err
 }
 
