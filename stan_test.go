@@ -18,10 +18,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nats-io/go-stan/pb"
+	"github.com/nats-io/go-nats-streaming/pb"
 	"github.com/nats-io/nats"
-	"github.com/nats-io/stan-server/server"
-	"github.com/nats-io/stan-server/test"
+	"github.com/nats-io/nats-streaming-server/server"
+	"github.com/nats-io/nats-streaming-server/test"
 
 	natsd "github.com/nats-io/gnatsd/test"
 )
@@ -129,7 +129,7 @@ func TestConnClosedOnConnectFailure(t *testing.T) {
 }
 
 func TestNatsConnNotClosedOnClose(t *testing.T) {
-	// Run a STAN server
+	// Run a NATS Streaming server
 	s := RunServer(clusterName)
 	defer s.Shutdown()
 
@@ -140,12 +140,12 @@ func TestNatsConnNotClosedOnClose(t *testing.T) {
 	}
 	defer nc.Close()
 
-	// Pass this NATS connection to STAN
+	// Pass this NATS connection to NATS Streaming
 	sc, err := Connect(clusterName, clientName, NatsConn(nc))
 	if err != nil {
 		t.Fatalf("Unexpected error on connect: %v", err)
 	}
-	// Now close the STAN connection
+	// Now close the NATS Streaming connection
 	sc.Close()
 
 	// Verify that NATS connection is not closed
@@ -155,7 +155,7 @@ func TestNatsConnNotClosedOnClose(t *testing.T) {
 }
 
 func TestBasicConnect(t *testing.T) {
-	// Run a STAN server
+	// Run a NATS Streaming server
 	s := RunServer(clusterName)
 	defer s.Shutdown()
 	sc := NewDefaultConnection(t)
@@ -163,7 +163,7 @@ func TestBasicConnect(t *testing.T) {
 }
 
 func TestBasicPublish(t *testing.T) {
-	// Run a STAN server
+	// Run a NATS Streaming server
 	s := RunServer(clusterName)
 	defer s.Shutdown()
 	sc := NewDefaultConnection(t)
@@ -174,7 +174,7 @@ func TestBasicPublish(t *testing.T) {
 }
 
 func TestBasicPublishAsync(t *testing.T) {
-	// Run a STAN server
+	// Run a NATS Streaming server
 	s := RunServer(clusterName)
 	defer s.Shutdown()
 	sc := NewDefaultConnection(t)
@@ -202,7 +202,7 @@ func TestBasicPublishAsync(t *testing.T) {
 }
 
 func TestTimeoutPublishAsync(t *testing.T) {
-	// Run a STAN server
+	// Run a NATS Streaming server
 	s := RunServer(clusterName)
 	defer s.Shutdown()
 
@@ -226,7 +226,7 @@ func TestTimeoutPublishAsync(t *testing.T) {
 		}
 		ch <- true
 	}
-	// Kill the STAN server so we timeout.
+	// Kill the NATS Streaming server so we timeout.
 	s.Shutdown()
 	glock.Lock()
 	guid, _ = sc.PublishAsync("foo", []byte("Hello World!"), acb)
@@ -240,7 +240,7 @@ func TestTimeoutPublishAsync(t *testing.T) {
 }
 
 func TestBasicSubscription(t *testing.T) {
-	// Run a STAN server
+	// Run a NATS Streaming server
 	s := RunServer(clusterName)
 	defer s.Shutdown()
 
@@ -255,7 +255,7 @@ func TestBasicSubscription(t *testing.T) {
 }
 
 func TestBasicQueueSubscription(t *testing.T) {
-	// Run a STAN server
+	// Run a NATS Streaming server
 	s := RunServer(clusterName)
 	defer s.Shutdown()
 
@@ -276,7 +276,7 @@ func TestBasicQueueSubscription(t *testing.T) {
 }
 
 func TestBasicPubSub(t *testing.T) {
-	// Run a STAN server
+	// Run a NATS Streaming server
 	s := RunServer(clusterName)
 	defer s.Shutdown()
 
@@ -329,7 +329,7 @@ func TestBasicPubSub(t *testing.T) {
 }
 
 func TestBasicPubSubFlowControl(t *testing.T) {
-	// Run a STAN server
+	// Run a NATS Streaming server
 	s := RunServer(clusterName)
 	defer s.Shutdown()
 
@@ -362,7 +362,7 @@ func TestBasicPubSubFlowControl(t *testing.T) {
 }
 
 func TestBasicPubQueueSub(t *testing.T) {
-	// Run a STAN server
+	// Run a NATS Streaming server
 	s := RunServer(clusterName)
 	defer s.Shutdown()
 
@@ -406,7 +406,7 @@ func TestBasicPubQueueSub(t *testing.T) {
 }
 
 func TestBasicPubSubWithReply(t *testing.T) {
-	// Run a STAN server
+	// Run a NATS Streaming server
 	s := RunServer(clusterName)
 	defer s.Shutdown()
 
@@ -443,7 +443,7 @@ func TestBasicPubSubWithReply(t *testing.T) {
 }
 
 func TestAsyncPubSubWithReply(t *testing.T) {
-	// Run a STAN server
+	// Run a NATS Streaming server
 	s := RunServer(clusterName)
 	defer s.Shutdown()
 
@@ -480,7 +480,7 @@ func TestAsyncPubSubWithReply(t *testing.T) {
 }
 
 func TestSubscriptionStartPositionLast(t *testing.T) {
-	// Run a STAN server
+	// Run a NATS Streaming server
 	s := RunServer(clusterName)
 	defer s.Shutdown()
 
@@ -526,7 +526,7 @@ func TestSubscriptionStartPositionLast(t *testing.T) {
 }
 
 func TestSubscriptionStartAtSequence(t *testing.T) {
-	// Run a STAN server
+	// Run a NATS Streaming server
 	s := RunServer(clusterName)
 	defer s.Shutdown()
 
@@ -593,7 +593,7 @@ func TestSubscriptionStartAtSequence(t *testing.T) {
 }
 
 func TestSubscriptionStartAtTime(t *testing.T) {
-	// Run a STAN server
+	// Run a NATS Streaming server
 	s := RunServer(clusterName)
 	defer s.Shutdown()
 
@@ -688,7 +688,7 @@ func TestSubscriptionStartAtTime(t *testing.T) {
 }
 
 func TestSubscriptionStartAtWithEmptyStore(t *testing.T) {
-	// Run a STAN server
+	// Run a NATS Streaming server
 	s := RunServer(clusterName)
 	defer s.Shutdown()
 
@@ -726,7 +726,7 @@ func TestSubscriptionStartAtWithEmptyStore(t *testing.T) {
 }
 
 func TestSubscriptionStartAtFirst(t *testing.T) {
-	// Run a STAN server
+	// Run a NATS Streaming server
 	s := RunServer(clusterName)
 	defer s.Shutdown()
 
@@ -791,7 +791,7 @@ func TestSubscriptionStartAtFirst(t *testing.T) {
 }
 
 func TestUnsubscribe(t *testing.T) {
-	// Run a STAN server
+	// Run a NATS Streaming server
 	s := RunServer(clusterName)
 	defer s.Shutdown()
 
@@ -837,7 +837,7 @@ func TestUnsubscribe(t *testing.T) {
 }
 
 func TestUnsubscribeWhileConnClosing(t *testing.T) {
-	// Run a STAN server
+	// Run a NATS Streaming server
 	s := RunServer(clusterName)
 	defer s.Shutdown()
 
@@ -868,7 +868,7 @@ func TestUnsubscribeWhileConnClosing(t *testing.T) {
 }
 
 func TestSubscribeShrink(t *testing.T) {
-	// Run a STAN server
+	// Run a NATS Streaming server
 	s := RunServer(clusterName)
 	defer s.Shutdown()
 
@@ -895,7 +895,7 @@ func TestSubscribeShrink(t *testing.T) {
 }
 
 func TestDupClientID(t *testing.T) {
-	// Run a STAN server
+	// Run a NATS Streaming server
 	s := RunServer(clusterName)
 	defer s.Shutdown()
 
@@ -909,7 +909,7 @@ func TestDupClientID(t *testing.T) {
 }
 
 func TestClose(t *testing.T) {
-	// Run a STAN server
+	// Run a NATS Streaming server
 	s := RunServer(clusterName)
 	defer s.Shutdown()
 
@@ -956,7 +956,7 @@ func TestDoubleClose(t *testing.T) {
 }
 
 func TestManualAck(t *testing.T) {
-	// Run a STAN server
+	// Run a NATS Streaming server
 	s := RunServer(clusterName)
 	defer s.Shutdown()
 
@@ -1038,7 +1038,7 @@ func TestManualAck(t *testing.T) {
 }
 
 func TestRedelivery(t *testing.T) {
-	// Run a STAN server
+	// Run a NATS Streaming server
 	s := RunServer(clusterName)
 	defer s.Shutdown()
 
@@ -1091,7 +1091,7 @@ func TestRedelivery(t *testing.T) {
 }
 
 func TestRedeliveryHonorMaxInFlight(t *testing.T) {
-	// Run a STAN server
+	// Run a NATS Streaming server
 	s := RunServer(clusterName)
 	defer s.Shutdown()
 
@@ -1144,7 +1144,7 @@ func checkTime(t *testing.T, label string, time1, time2 time.Time, expected time
 }
 
 func testRedelivery(t *testing.T, count int, queueSub bool) {
-	// Run a STAN server
+	// Run a NATS Streaming server
 	s := RunServer(clusterName)
 	defer s.Shutdown()
 
@@ -1255,7 +1255,7 @@ func TestHighRedeliveryToQueueSubMoreThanOnce(t *testing.T) {
 }
 
 func TestDurableSubscriber(t *testing.T) {
-	// Run a STAN server
+	// Run a NATS Streaming server
 	s := RunServer(clusterName)
 	defer s.Shutdown()
 
@@ -1365,7 +1365,7 @@ func TestDurableSubscriber(t *testing.T) {
 }
 
 func TestPubMultiQueueSub(t *testing.T) {
-	// Run a STAN server
+	// Run a NATS Streaming server
 	s := RunServer(clusterName)
 	defer s.Shutdown()
 
@@ -1443,7 +1443,7 @@ func TestPubMultiQueueSub(t *testing.T) {
 }
 
 func TestPubMultiQueueSubWithSlowSubscriber(t *testing.T) {
-	// Run a STAN server
+	// Run a NATS Streaming server
 	s := RunServer(clusterName)
 	defer s.Shutdown()
 
@@ -1529,7 +1529,7 @@ func TestPubMultiQueueSubWithSlowSubscriber(t *testing.T) {
 }
 
 func TestPubMultiQueueSubWithRedelivery(t *testing.T) {
-	// Run a STAN server
+	// Run a NATS Streaming server
 	s := RunServer(clusterName)
 	defer s.Shutdown()
 
@@ -1588,7 +1588,7 @@ func TestPubMultiQueueSubWithRedelivery(t *testing.T) {
 }
 
 func TestPubMultiQueueSubWithDelayRedelivery(t *testing.T) {
-	// Run a STAN server
+	// Run a NATS Streaming server
 	s := RunServer(clusterName)
 	defer s.Shutdown()
 
@@ -1659,7 +1659,7 @@ func TestPubMultiQueueSubWithDelayRedelivery(t *testing.T) {
 }
 
 func TestRedeliveredFlag(t *testing.T) {
-	// Run a STAN server
+	// Run a NATS Streaming server
 	s := RunServer(clusterName)
 	defer s.Shutdown()
 
@@ -1724,7 +1724,7 @@ func TestRedeliveredFlag(t *testing.T) {
 // receive duplicate when requesting a replay while messages are being
 // published on it's subject.
 func TestNoDuplicatesOnSubscriberStart(t *testing.T) {
-	// Run a STAN server
+	// Run a NATS Streaming server
 	s := RunServer(clusterName)
 	defer s.Shutdown()
 
@@ -1750,7 +1750,7 @@ func TestNoDuplicatesOnSubscriberStart(t *testing.T) {
 
 	publish := func() {
 		// publish until the receiver starts, then one additional batch.
-		// This primes STAN with messages, and gives us a point to stop
+		// This primes NATS Streaming with messages, and gives us a point to stop
 		// when the subscriber has started processing messages.
 		for atomic.LoadInt32(&received) == 0 {
 			for i := int32(0); i < batch; i++ {
@@ -1792,7 +1792,7 @@ func TestNoDuplicatesOnSubscriberStart(t *testing.T) {
 func TestMaxChannels(t *testing.T) {
 	t.Skip("Skipping test for now around channel limits")
 
-	// Run a STAN server
+	// Run a NATS Streaming server
 	s := RunServer(clusterName)
 	defer s.Shutdown()
 

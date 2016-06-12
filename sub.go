@@ -1,6 +1,6 @@
 // Copyright 2016 Apcera Inc. All rights reserved.
 
-// Package stan is a Go client for the STAN/NATS messaging system (https://nats.io).
+// Package go-nats-streaming is a Go client for the NATS Streaming messaging system (https://nats.io).
 package stan
 
 import (
@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/nats-io/go-stan/pb"
+	"github.com/nats-io/go-nats-streaming/pb"
 	"github.com/nats-io/nats"
 )
 
@@ -27,7 +27,7 @@ type Msg struct {
 
 // Subscriptions and Options
 
-// Subscription represents a subscription within the STAN cluster. Subscriptions
+// Subscription represents a subscription within the NATS Streaming cluster. Subscriptions
 // will be rate matched and follow at-least delivery semantics.
 type Subscription interface {
 	Unsubscribe() error
@@ -162,17 +162,17 @@ func DurableName(name string) SubscriptionOption {
 	}
 }
 
-// Subscribe will perform a subscription with the given options to the STAN cluster.
+// Subscribe will perform a subscription with the given options to the NATS Streaming cluster.
 func (sc *conn) Subscribe(subject string, cb MsgHandler, options ...SubscriptionOption) (Subscription, error) {
 	return sc.subscribe(subject, "", cb, options...)
 }
 
-// QueueSubscribe will perform a queue subscription with the given options to the STAN cluster.
+// QueueSubscribe will perform a queue subscription with the given options to the NATS Streaming cluster.
 func (sc *conn) QueueSubscribe(subject, qgroup string, cb MsgHandler, options ...SubscriptionOption) (Subscription, error) {
 	return sc.subscribe(subject, qgroup, cb, options...)
 }
 
-// subscribe will perform a subscription with the given options to the STAN cluster.
+// subscribe will perform a subscription with the given options to the NATS Streaming cluster.
 func (sc *conn) subscribe(subject, qgroup string, cb MsgHandler, options ...SubscriptionOption) (Subscription, error) {
 	sub := &subscription{subject: subject, qgroup: qgroup, inbox: nats.NewInbox(), cb: cb, sc: sc, opts: DefaultSubscriptionOptions}
 	for _, opt := range options {
