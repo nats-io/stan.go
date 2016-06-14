@@ -1,6 +1,6 @@
 // Copyright 2016 Apcera Inc. All rights reserved.
 
-// Package stan is a Go client for the STAN/NATS messaging system (https://nats.io).
+// Package go-nats-streaming is a Go client for the NATS Streaming messaging system (https://nats.io).
 package stan
 
 import (
@@ -10,12 +10,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/nats-io/go-stan/pb"
+	"github.com/nats-io/go-nats-streaming/pb"
 	"github.com/nats-io/nats"
 	"github.com/nats-io/nuid"
 )
 
-// Version is the STAN Go Client version
+// Version is the NATS Streaming Go Client version
 const Version = "0.0.1"
 
 const (
@@ -23,17 +23,17 @@ const (
 	DefaultNatsURL = "nats://localhost:4222"
 	// DefaultConnectWait is the default timeout used for the connect operation
 	DefaultConnectWait = 2 * time.Second
-	// DefaultDiscoverPrefix is the prefix subject used to connect to the STAN server
+	// DefaultDiscoverPrefix is the prefix subject used to connect to the NATS Streaming server
 	DefaultDiscoverPrefix = "_STAN.discover"
-	// DefaultACKPrefix is the prefix subject used to send ACKs to the STAN server
+	// DefaultACKPrefix is the prefix subject used to send ACKs to the NATS Streaming server
 	DefaultACKPrefix = "_STAN.acks"
 	// DefaultMaxPubAcksInflight is the default maximum number of published messages
 	// without outstanding ACKs from the server
 	DefaultMaxPubAcksInflight = 16384
 )
 
-// Conn represents a connection to the STAN subsystem. It can Publish and
-// Subscribe to messages withing the STAN cluster.
+// Conn represents a connection to the NATS Streaming subsystem. It can Publish and
+// Subscribe to messages withing the NATS Streaming cluster.
 type Conn interface {
 	// Publish
 	Publish(subject string, data []byte) error
@@ -67,7 +67,7 @@ var (
 
 // AckHandler is used for Async Publishing to provide status of the ack.
 // The func will be passed teh GUID and any error state. No error means the
-// message was sucessfully received by STAN.
+// message was sucessfully received by NATS Streaming.
 type AckHandler func(string, error)
 
 // Options can be used to a create a customized connection.
@@ -80,7 +80,7 @@ type Options struct {
 	MaxPubAcksInflight int
 }
 
-// DefaultOptions are the STAN client's default options
+// DefaultOptions are the NATS Streaming client's default options
 var DefaultOptions = Options{
 	NatsURL:            DefaultNatsURL,
 	ConnectTimeout:     DefaultConnectWait,
@@ -110,7 +110,7 @@ func PubAckWait(t time.Duration) Option {
 }
 
 // NatsConn is an Option to set the underlying NATS connection to be used
-// by a STAN Conn object.
+// by a NATS Streaming Conn object.
 func NatsConn(nc *nats.Conn) Option {
 	return func(o *Options) error {
 		o.NatsConn = nc
@@ -135,7 +135,7 @@ type conn struct {
 	pubAckChan      chan (struct{})
 	opts            Options
 	nc              *nats.Conn
-	ncOwned         bool // STAN created the connection, so needs to close it.
+	ncOwned         bool // NATS Streaming created the connection, so needs to close it.
 }
 
 // Closure for ack contexts.
@@ -145,7 +145,7 @@ type ack struct {
 	ch chan error
 }
 
-// Connect will form a connection to the STAN subsystem.
+// Connect will form a connection to the NATS Streaming subsystem.
 func Connect(stanClusterID, clientID string, options ...Option) (Conn, error) {
 	// Process Options
 	c := conn{clientID: clientID, opts: DefaultOptions}
@@ -271,7 +271,7 @@ func (sc *conn) Close() error {
 	return nil
 }
 
-// Process a heartbeat from the STAN cluster
+// Process a heartbeat from the NATS Streaming cluster
 func (sc *conn) processHeartBeat(m *nats.Msg) {
 	// No payload assumed, just reply.
 	sc.RLock()
@@ -282,7 +282,7 @@ func (sc *conn) processHeartBeat(m *nats.Msg) {
 	}
 }
 
-// Process an ack from the STAN cluster
+// Process an ack from the NATS Streaming cluster
 func (sc *conn) processAck(m *nats.Msg) {
 	pa := &pb.PubAck{}
 	err := pa.Unmarshal(m.Data)
@@ -407,7 +407,7 @@ func (sc *conn) removeAck(guid string) *ack {
 	return a
 }
 
-// Process an msg from the STAN cluster
+// Process an msg from the NATS Streaming cluster
 func (sc *conn) processMsg(raw *nats.Msg) {
 	msg := &Msg{}
 	err := msg.Unmarshal(raw.Data)

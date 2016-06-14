@@ -1,12 +1,12 @@
-# Project STAN
+# NATS Streaming
 
-STAN is an extremely performant, lightweight reliable streaming platform powered by [NATS](https://nats.io).
+NATS Streaming is an extremely performant, lightweight reliable streaming platform powered by [NATS](https://nats.io).
 
 [![License MIT](https://img.shields.io/npm/l/express.svg)](http://opensource.org/licenses/MIT) 
-[![Build Status](https://travis-ci.com/nats-io/go-stan.svg?token=UGjrGa8sFWGQcHSJeAvp&branch=master)](http://travis-ci.com/nats-io/go-stan)
-[![Coverage Status](https://coveralls.io/repos/nats-io/go-stan/badge.svg?branch=master&t=vbqGz4)](https://coveralls.io/r/nats-io/go-stan?branch=master)
+[![Build Status](https://travis-ci.com/nats-io/go-nats-streaming.svg?token=UGjrGa8sFWGQcHSJeAvp&branch=master)](http://travis-ci.com/nats-io/go-nats-streaming)
+[![Coverage Status](https://coveralls.io/repos/nats-io/go-nats-streaming/badge.svg?branch=master&t=vbqGz4)](https://coveralls.io/r/nats-io/go-nats-streaming?branch=master)
 
-STAN provides the following high-level feature set:
+NATS Streaming provides the following high-level feature set:
 - Log based persistence
 - At-Least-Once Delivery model, giving reliable message delivery
 - Rate matched on a per subscription basis
@@ -15,7 +15,7 @@ STAN provides the following high-level feature set:
 
 ## Notes
 
-- Please raise questions/issues via the [Issue Tracker](https://github.com/nats-io/stan/issues) or via the #stan-preview channel on natsio.slack.com (contact larry@apcera.com or brian@apcera.com for access)
+- Please raise questions/issues via the [Issue Tracker](https://github.com/nats-io/go-nats-streaming/issues) or via the #stan-preview channel on natsio.slack.com (contact larry@apcera.com or brian@apcera.com for access)
 
 ## Known Issues
 - When an application crashes and immediately tries to reconnect, there is a known issue where the server may prevent it from doing so. This will be fixed shortly.
@@ -26,7 +26,7 @@ STAN provides the following high-level feature set:
 
 ```bash
 # Go client
-go get github.com/nats-io/stan
+go get github.com/nats-io/go-nats-streaming
 ```
 
 For the Preview, `stan-server` is provided in binary form for Linux and Mac [here](https://github.com/nats-io/stan-server-preview/releases)
@@ -38,7 +38,7 @@ For the Preview, `stan-server` is provided in binary form for Linux and Mac [her
 sc, _ := stan.Connect(clusterID, clientID)
 
 // Simple Synchronous Publisher
-sc.Publish("foo", []byte("Hello World")) // does not return until an ack has been received from STAN
+sc.Publish("foo", []byte("Hello World")) // does not return until an ack has been received from NATS Streaming
 
 // Simple Async Subscriber
 sc.Subscribe("foo", func(m *nats.Msg) {
@@ -54,7 +54,7 @@ sc.Close()
 
 ### Subscription Start (i.e. Replay) Options 
 
-STAN subscriptions are similar to NATS subscriptions, but clients may start their subscription at an earlier point in the message stream, allowing them to receive messages that were published before this client registered interest. 
+NATS Streaming subscriptions are similar to NATS subscriptions, but clients may start their subscription at an earlier point in the message stream, allowing them to receive messages that were published before this client registered interest. 
 The options are described with examples below:
 
 ```go
@@ -92,7 +92,7 @@ sub, err := sc.Subscribe("foo", func(m *stan.Msg) {
 Replay of messages offers great flexibility for clients wishing to begin processing at some earlier point in the data stream. 
 However, some clients just need to pick up where they left off from an earlier session, without having to manually track their position in the stream of messages. 
 Durable subscriptions allow clients to assign a durable name to a subscription when it is created. 
-Doing this causes the STAN server to track the last acknowledged message for that clientID + durable name, so that only messages since the last acknowledged message will be delivered to the client.
+Doing this causes the NATS Streaming server to track the last acknowledged message for that clientID + durable name, so that only messages since the last acknowledged message will be delivered to the client.
 
 ```go
 sc, _ := stan.Connect("test-cluster", "client-123")
@@ -121,7 +121,7 @@ sc.Subscribe("foo", func(m *nats.Msg) {
 
 ### Asynchronous Publishing
 
-The basic publish API (`Publish(subject, payload)`) is synchronous; it does not return control to the caller until the STAN server has acknowledged receipt of the message. To accomplish this, a [NUID](https://github.com/nats-io/nuid) is generated for the message on creation, and the client library waits for a publish acknowledgement from the server with a matching NUID before it returns control to the caller, possibly with an error indicating that the operation was not successful due to some server problem or authorization error.
+The basic publish API (`Publish(subject, payload)`) is synchronous; it does not return control to the caller until the NATS Streaming server has acknowledged receipt of the message. To accomplish this, a [NUID](https://github.com/nats-io/nuid) is generated for the message on creation, and the client library waits for a publish acknowledgement from the server with a matching NUID before it returns control to the caller, possibly with an error indicating that the operation was not successful due to some server problem or authorization error.
 
 Advanced users may wish to process these publish acknowledgements manually to achieve higher publish throughput by not waiting on individual acknowledgements during the publish operation. An asynchronous publish API is provided for this purpose:
 
@@ -143,10 +143,10 @@ Advanced users may wish to process these publish acknowledgements manually to ac
 
 ### Message Acknowledgements and Redelivery
 
-STAN offers At-Least-Once delivery semantics, meaning that once a message has been delivered to an eligible subscriber, if an acknowledgement is not received within the configured timeout interval, STAN will attempt redelivery of the message. 
+NATS Streaming offers At-Least-Once delivery semantics, meaning that once a message has been delivered to an eligible subscriber, if an acknowledgement is not received within the configured timeout interval, NATS Streaming will attempt redelivery of the message. 
 This timeout interval is specified by the subscription option `AckWait`, which defaults to 30 seconds.
 
-By default, messages are automatically acknowledged by the STAN client library after the subscriber's message handler is invoked. However, there may be cases in which the subscribing client wishes to accelerate or defer acknowledgement of the message. 
+By default, messages are automatically acknowledged by the NATS Streaming client library after the subscriber's message handler is invoked. However, there may be cases in which the subscribing client wishes to accelerate or defer acknowledgement of the message. 
 To do this, the client must set manual acknowledgement mode on the subscription, and invoke `Ack()` on the `Msg`. ex:
 
 ```go
@@ -166,7 +166,7 @@ This mismatch is commonly called a "fast producer/slow consumer" problem, and ma
 
 ### Publisher rate limiting
 
-STAN provides a connection option called `MaxPubAcksInFlight` that effectively limits the number of unacknowledged messages that a publisher may have in-flight at any given time. When this maximum is reached, further `PublishAsync()` calls will block until the number of unacknowledged messages falls below the specified limit. ex:
+NATS Streaming provides a connection option called `MaxPubAcksInFlight` that effectively limits the number of unacknowledged messages that a publisher may have in-flight at any given time. When this maximum is reached, further `PublishAsync()` calls will block until the number of unacknowledged messages falls below the specified limit. ex:
 
 ```go
 sc, _ := stan.Connect(clusterID, clientID, MaxPubAcksInFlight(25))
@@ -186,8 +186,8 @@ for i := 1; i < 1000; i++ {
 ### Subscriber rate limiting
 
 Rate limiting may also be accomplished on the subscriber side, on a per-subscription basis, using a subscription option called `MaxInFlight`. 
-This option specifies the maximum number of outstanding acknowledgements (messages that have been delivered but not acknowledged) that STAN will allow for a given subscription. 
-When this limit is reached, STAN will suspend delivery of messages to this subscription until the number of unacknowledged messages falls below the specified limit. ex:
+This option specifies the maximum number of outstanding acknowledgements (messages that have been delivered but not acknowledged) that NATS Streaming will allow for a given subscription. 
+When this limit is reached, NATS Streaming will suspend delivery of messages to this subscription until the number of unacknowledged messages falls below the specified limit. ex:
 
 ```go
 // Subscribe with manual ack mode and a max in-flight limit of 25

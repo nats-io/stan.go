@@ -11,16 +11,16 @@ import (
 	"sync"
 	"time"
 
-	"github.com/nats-io/go-stan"
+	"github.com/nats-io/go-nats-streaming"
 )
 
 var usageStr = `
 Usage: stan-pub [options] <subject> <message>
 
 Options:
-	-s, --server   <url>            STAN server URL(s)
-	-c, --cluster  <cluster name>   STAN cluster name
-	-id,--clientid <client ID>      STAN client ID
+	-s, --server   <url>            NATS Streaming server URL(s)
+	-c, --cluster  <cluster name>   NATS Streaming cluster name
+	-id,--clientid <client ID>      NATS Streaming client ID
 	-a, --async                     Asynchronous publish mode
 `
 
@@ -39,12 +39,12 @@ func main() {
 
 	flag.StringVar(&opts.NatsURL, "s", stan.DefaultNatsURL, "The nats server URLs (separated by comma)")
 	flag.StringVar(&opts.NatsURL, "server", stan.DefaultNatsURL, "The nats server URLs (separated by comma)")
-	flag.StringVar(&clusterID, "c", "test-cluster", "The STAN cluster ID")
-	flag.StringVar(&clusterID, "cluster", "test-cluster", "The STAN cluster ID")
-	flag.StringVar(&clientID, "id", "stan-pub", "The STAN client ID to connect with")
-	flag.StringVar(&clientID, "clientid", "stan-pub", "The STAN client ID to connect with")
-	flag.BoolVar(&async, "a", false, "Publish asynchronousely")
-	flag.BoolVar(&async, "async", false, "Publish asynchronousely")
+	flag.StringVar(&clusterID, "c", "test-cluster", "The NATS Streaming cluster ID")
+	flag.StringVar(&clusterID, "cluster", "test-cluster", "The NATS Streaming cluster ID")
+	flag.StringVar(&clientID, "id", "stan-pub", "The NATS Streaming client ID to connect with")
+	flag.StringVar(&clientID, "clientid", "stan-pub", "The NATS Streaming client ID to connect with")
+	flag.BoolVar(&async, "a", false, "Publish asynchronously")
+	flag.BoolVar(&async, "async", false, "Publish asynchronously")
 
 	log.SetFlags(0)
 	flag.Usage = usage

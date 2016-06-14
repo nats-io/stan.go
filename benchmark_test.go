@@ -14,7 +14,7 @@ import (
 func BenchmarkPublish(b *testing.B) {
 	b.StopTimer()
 
-	// Run a STAN server
+	// Run a NATS Streaming server
 	s := RunServer(clusterName)
 	defer s.Shutdown()
 	sc := NewDefaultConnection(b)
@@ -35,7 +35,7 @@ func BenchmarkPublish(b *testing.B) {
 func BenchmarkPublishAsync(b *testing.B) {
 	b.StopTimer()
 
-	// Run a STAN server
+	// Run a NATS Streaming server
 	s := RunServer(clusterName)
 	defer s.Shutdown()
 	sc := NewDefaultConnection(b)
@@ -81,7 +81,7 @@ func BenchmarkPublishAsync(b *testing.B) {
 func BenchmarkSubscribe(b *testing.B) {
 	b.StopTimer()
 
-	// Run a STAN server
+	// Run a NATS Streaming server
 	s := RunServer(clusterName)
 	defer s.Shutdown()
 	sc := NewDefaultConnection(b)
@@ -134,7 +134,7 @@ func BenchmarkSubscribe(b *testing.B) {
 func BenchmarkQueueSubscribe(b *testing.B) {
 	b.StopTimer()
 
-	// Run a STAN server
+	// Run a NATS Streaming server
 	s := RunServer(clusterName)
 	defer s.Shutdown()
 	sc := NewDefaultConnection(b)
@@ -192,7 +192,7 @@ func BenchmarkQueueSubscribe(b *testing.B) {
 func BenchmarkPublishSubscribe(b *testing.B) {
 	b.StopTimer()
 
-	// Run a STAN server
+	// Run a NATS Streaming server
 	s := RunServer(clusterName)
 	defer s.Shutdown()
 	sc := NewDefaultConnection(b)

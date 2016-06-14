@@ -11,17 +11,17 @@ import (
 	"os/signal"
 	"time"
 
-	. "github.com/nats-io/go-stan"
-	"github.com/nats-io/go-stan/pb"
+	. "github.com/nats-io/go-nats-streaming"
+	"github.com/nats-io/go-nats-streaming/pb"
 )
 
 var usageStr = `
 Usage: stan-sub [options] <subject>
 
 Options:
-	-s, --server   <url>            STAN server URL(s)
-	-c, --cluster  <cluster name>   STAN cluster name
-	-id,--clientid <client ID>      STAN client ID
+	-s, --server   <url>            NATS Streaming server URL(s)
+	-c, --cluster  <cluster name>   NATS Streaming cluster name
+	-id,--clientid <client ID>      NATS Streaming client ID
 
 Subscription Options:
 	--qgroup <name>                 Queue group
@@ -61,10 +61,10 @@ func main() {
 
 	flag.StringVar(&opts.NatsURL, "s", DefaultNatsURL, "The nats server URLs (separated by comma)")
 	flag.StringVar(&opts.NatsURL, "server", DefaultNatsURL, "The nats server URLs (separated by comma)")
-	flag.StringVar(&clusterID, "c", "test-cluster", "The STAN cluster ID")
-	flag.StringVar(&clusterID, "cluster", "test-cluster", "The STAN cluster ID")
-	flag.StringVar(&clientID, "id", "", "The STAN client ID to connect with")
-	flag.StringVar(&clientID, "clientid", "", "The STAN client ID to connect with")
+	flag.StringVar(&clusterID, "c", "test-cluster", "The NATS Streaming cluster ID")
+	flag.StringVar(&clusterID, "cluster", "test-cluster", "The NATS Streaming cluster ID")
+	flag.StringVar(&clientID, "id", "", "The NATS Streaming client ID to connect with")
+	flag.StringVar(&clientID, "clientid", "", "The NATS Streaming client ID to connect with")
 	flag.BoolVar(&showTime, "t", false, "Display timestamps")
 	// Subscription options
 	flag.Uint64Var(&startSeq, "seq", 0, "Start at sequence no.")

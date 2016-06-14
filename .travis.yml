@@ -6,7 +6,7 @@ before_install:
 - echo -e "machine github.com\n login $TRAVIS_CI_TOKEN" >> ~/.netrc
 install:
 - go get -t ./...
-- go get github.com/nats-io/stan-server
+- go get github.com/nats-io/nats-streaming-server
 - go get github.com/mattn/goveralls
 - go get github.com/wadey/gocovmerge
 script:
