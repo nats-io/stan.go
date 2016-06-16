@@ -80,9 +80,16 @@ func main() {
 	flag.Parse()
 
 	args := flag.Args()
-	if len(args) < 1 {
+
+	if clientID == "" {
+		log.Printf("Error: A unique client ID must be specified.")
 		usage()
 	}
+	if len(args) < 1 {
+		log.Printf("Error: A subject must be specified.")
+		usage()
+	}
+
 
 	sc, err := Connect(clusterID, clientID)
 	if err != nil {
