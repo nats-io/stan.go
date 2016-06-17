@@ -51,13 +51,14 @@ func main() {
 	flag.Parse()
 
 	args := flag.Args()
+
 	if len(args) < 1 {
 		usage()
 	}
 
 	sc, err := stan.Connect(clusterID, clientID)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Can't connect: %v.\nMake sure a NATS Streaming Server is running at: %s", err, opts.NatsURL)
 	}
 	defer sc.Close()
 
