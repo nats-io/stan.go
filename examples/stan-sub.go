@@ -80,13 +80,20 @@ func main() {
 	flag.Parse()
 
 	args := flag.Args()
+
+	if clientID == "" {
+		log.Printf("Error: A unique client ID must be specified.")
+		usage()
+	}
 	if len(args) < 1 {
+		log.Printf("Error: A subject must be specified.")
 		usage()
 	}
 
+
 	sc, err := Connect(clusterID, clientID)
 	if err != nil {
-		log.Fatalf("Can't connect: %v\n", err)
+		log.Fatalf("Can't connect: %v.\nMake sure a NATS Streaming Server is running at: %s", err, opts.NatsURL)
 	}
 	log.Printf("Connected to %s clusterID: [%s] clientID: [%s]\n", opts.NatsURL, clusterID, clientID)
 
