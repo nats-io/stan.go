@@ -4,7 +4,7 @@ NATS Streaming is an extremely performant, lightweight reliable streaming platfo
 
 [![License MIT](https://img.shields.io/npm/l/express.svg)](http://opensource.org/licenses/MIT) 
 [![Build Status](https://travis-ci.org/nats-io/go-nats-streaming.svg?branch=master)](http://travis-ci.org/nats-io/go-nats-streaming)
-[![Coverage Status](https://coveralls.io/repos/nats-io/go-nats-streaming/badge.svg?branch=master&t=vbqGz4)](https://coveralls.io/r/nats-io/go-nats-streaming?branch=master)
+[![Coverage Status](https://coveralls.io/repos/nats-io/go-nats-streaming/badge.svg?branch=master)](https://coveralls.io/r/nats-io/go-nats-streaming?branch=master)
 
 NATS Streaming provides the following high-level feature set:
 - Log based persistence

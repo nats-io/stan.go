@@ -8,7 +8,7 @@ go:
 install:
 - go get -t ./...
 - go get github.com/nats-io/nats-streaming-server
-- go get github.com/mattn/goveralls
+- go get github.com/mattn/goveralls -repotoken $COVERALLS_TOKEN
 - go get github.com/wadey/gocovmerge
 script:
 - go fmt ./...
