@@ -141,7 +141,7 @@ func main() {
 	signal.Notify(signalChan, os.Interrupt)
 	go func() {
 		for _ = range signalChan {
-			fmt.Println("\nReceived an interrupt, unsubscribing and closing connection...\n")
+			fmt.Printf("\nReceived an interrupt, unsubscribing and closing connection...\n\n")
 			// Do not unsubscribe a durable on exit, except if asked to.
 			if durable == "" || unsubscribe {
 				sub.Unsubscribe()

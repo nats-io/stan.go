@@ -1,6 +1,6 @@
 // Copyright 2016 Apcera Inc. All rights reserved.
 
-// Package go-nats-streaming is a Go client for the NATS Streaming messaging system (https://nats.io).
+// Package stan is a Go client for the NATS Streaming messaging system (https://nats.io).
 package stan
 
 import (
@@ -33,7 +33,7 @@ const (
 )
 
 // Conn represents a connection to the NATS Streaming subsystem. It can Publish and
-// Subscribe to messages withing the NATS Streaming cluster.
+// Subscribe to messages within the NATS Streaming cluster.
 type Conn interface {
 	// Publish
 	Publish(subject string, data []byte) error
@@ -67,7 +67,7 @@ var (
 
 // AckHandler is used for Async Publishing to provide status of the ack.
 // The func will be passed teh GUID and any error state. No error means the
-// message was sucessfully received by NATS Streaming.
+// message was successfully received by NATS Streaming.
 type AckHandler func(string, error)
 
 // Options can be used to a create a customized connection.

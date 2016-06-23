@@ -1,6 +1,6 @@
 // Copyright 2016 Apcera Inc. All rights reserved.
 
-// Package go-nats-streaming is a Go client for the NATS Streaming messaging system (https://nats.io).
+// Package stan is a Go client for the NATS Streaming messaging system (https://nats.io).
 package stan
 
 import (
