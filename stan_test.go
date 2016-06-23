@@ -54,7 +54,7 @@ func TestUnreachable(t *testing.T) {
 	s := natsd.RunDefaultServer()
 	defer s.Shutdown()
 
-	// Non-Existant or Unreachable
+	// Non-Existent or Unreachable
 	connectTime := 25 * time.Millisecond
 	start := time.Now()
 	if _, err := Connect("someNonExistantServerID", "myTestClient", ConnectWait(connectTime)); err != ErrConnectReqTimeout {
@@ -106,7 +106,7 @@ func TestConnClosedOnConnectFailure(t *testing.T) {
 	s := natsd.RunDefaultServer()
 	defer s.Shutdown()
 
-	// Non-Existant or Unreachable
+	// Non-Existent or Unreachable
 	connectTime := 25 * time.Millisecond
 	if _, err := Connect("someNonExistantServerID", "myTestClient", ConnectWait(connectTime)); err != ErrConnectReqTimeout {
 		t.Fatalf("Expected Unreachable err, got %v\n", err)
