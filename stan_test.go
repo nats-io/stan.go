@@ -1853,3 +1853,19 @@ func TestRaceAckOnClose(t *testing.T) {
 	time.Sleep(10 * time.Millisecond)
 	sc.Close()
 }
+
+func TestStatus(t *testing.T) {
+	s := RunServer(clusterName)
+	defer s.Shutdown()
+
+	sc := NewDefaultConnection(t)
+	defer sc.Close()
+
+	if sc.Status() != nats.CONNECTED {
+		t.Fatal("Should have status set to CONNECTED")
+	}
+	sc.Close()
+	if sc.Status() != nats.CLOSED {
+		t.Fatal("Should have status set to CLOSED")
+	}
+}
