@@ -50,6 +50,9 @@ type Conn interface {
 
 	// Close
 	Close() error
+
+	// Status returns the status of the underlying NATS conn.
+	Status() nats.Status
 }
 
 // Errors
@@ -269,6 +272,14 @@ func (sc *conn) Close() error {
 		return errors.New(cr.Error)
 	}
 	return nil
+}
+
+// Status returns the status of the underlying NATS conn.
+func (sc *conn) Status() nats.Status {
+	if sc.nc == nil {
+		return nats.CLOSED
+	}
+	return sc.nc.Status()
 }
 
 // Process a heartbeat from the NATS Streaming cluster
