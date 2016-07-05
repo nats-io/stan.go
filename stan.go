@@ -50,6 +50,11 @@ type Conn interface {
 
 	// Close
 	Close() error
+
+	// NatsConn returns the underlying NATS conn. Use this with care. For
+	// example, closing the wrapped NATS conn will put the NATS Streaming Conn
+	// in an invalid state.
+	NatsConn() *nats.Conn
 }
 
 // Errors
@@ -269,6 +274,13 @@ func (sc *conn) Close() error {
 		return errors.New(cr.Error)
 	}
 	return nil
+}
+
+// NatsConn returns the underlying NATS conn. Use this with care. For example,
+// closing the wrapped NATS conn will put the NATS Streaming Conn in an invalid
+// state.
+func (sc *conn) NatsConn() *nats.Conn {
+	return sc.nc
 }
 
 // Process a heartbeat from the NATS Streaming cluster

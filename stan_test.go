@@ -22,6 +22,7 @@ import (
 	"github.com/nats-io/nats"
 	"github.com/nats-io/nats-streaming-server/server"
 	"github.com/nats-io/nats-streaming-server/test"
+	natstest "github.com/nats-io/nats/test"
 
 	natsd "github.com/nats-io/gnatsd/test"
 )
@@ -1852,4 +1853,38 @@ func TestRaceAckOnClose(t *testing.T) {
 	// Close while ack'ing may happen
 	time.Sleep(10 * time.Millisecond)
 	sc.Close()
+}
+
+func TestNatsConn(t *testing.T) {
+	s := RunServer(clusterName)
+	defer s.Shutdown()
+	sc := NewDefaultConnection(t)
+	defer sc.Close()
+
+	// Make sure we can get the STAN-created Conn.
+	nc := sc.NatsConn()
+
+	if nc.Status() != nats.CONNECTED {
+		t.Fatal("Should have status set to CONNECTED")
+	}
+	nc.Close()
+	if nc.Status() != nats.CLOSED {
+		t.Fatal("Should have status set to CLOSED")
+	}
+
+	sc.Close()
+	if sc.NatsConn() != nil {
+		t.Fatal("Wrapped conn should be nil after close")
+	}
+
+	// Make sure we can get the Conn we provide.
+	nc = natstest.NewDefaultConnection(t)
+	sc, err := Connect(clusterName, clientName, NatsConn(nc))
+	if err != nil {
+		stackFatalf(t, "Expected to connect correctly, got err %v", err)
+	}
+	defer sc.Close()
+	if sc.NatsConn() != nc {
+		t.Fatal("Unexpected wrapped conn")
+	}
 }
