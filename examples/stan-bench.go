@@ -82,17 +82,19 @@ func main() {
 
 	// Run Subscribers first
 	startwg.Add(*numSubs)
+	subCounts := msgsPerClient(*numMsgs, *numSubs)
 	for i := 0; i < *numSubs; i++ {
 		subID := fmt.Sprintf("%s-sub-%d", *clientID, i)
-		go runSubscriber(&startwg, &donewg, opts, *numMsgs, *messageSize, *ignoreOld, subID)
+		go runSubscriber(&startwg, &donewg, opts, subCounts[i], *messageSize, *ignoreOld, subID)
 	}
 	startwg.Wait()
 
 	// Now Publishers
 	startwg.Add(*numPubs)
+	pubCounts := msgsPerClient(*numMsgs, *numPubs)
 	for i := 0; i < *numPubs; i++ {
 		pubID := fmt.Sprintf("%s-pub-%d", *clientID, i)
-		go runPublisher(&startwg, &donewg, opts, *numMsgs, *messageSize, *async, pubID, *maxPubAcks)
+		go runPublisher(&startwg, &donewg, opts, pubCounts[i], *messageSize, *async, pubID, *maxPubAcks)
 	}
 
 	log.Printf("Starting benchmark [msgs=%d, pubs=%d, subs=%d]\n", *numMsgs, *numPubs, *numSubs)
@@ -117,13 +119,13 @@ func main() {
 	bench := newBenchStats(start, end, pubStats, subStats)
 	fmt.Print(bench.human())
 
-	if "" != *jsonFile {
+	if *jsonFile != "" {
 		json := bench.json()
 		ioutil.WriteFile(*jsonFile, []byte(json), 0644)
 		fmt.Printf("Saved JSON data for the run in %s\n", *jsonFile)
 	}
 
-	if "" != *csvFile {
+	if *csvFile != "" {
 		csv := bench.csv()
 		ioutil.WriteFile(*csvFile, []byte(csv), 0644)
 		fmt.Printf("Saved metric data in csv file %s\n", *csvFile)
