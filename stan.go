@@ -114,6 +114,15 @@ func PubAckWait(t time.Duration) Option {
 	}
 }
 
+// MaxPubAcksInFlight is an Option to set the maximum number of published
+// messages without outstanding ACKs from the server.
+func MaxPubAcksInFlight(max int) Option {
+	return func(o *Options) error {
+		o.MaxPubAcksInflight = max
+		return nil
+	}
+}
+
 // NatsConn is an Option to set the underlying NATS connection to be used
 // by a NATS Streaming Conn object.
 func NatsConn(nc *nats.Conn) Option {

@@ -1888,3 +1888,43 @@ func TestNatsConn(t *testing.T) {
 		t.Fatal("Unexpected wrapped conn")
 	}
 }
+
+func TestMaxPubAcksInFlight(t *testing.T) {
+	s := RunServer(clusterName)
+	defer s.Shutdown()
+
+	nc, err := nats.Connect(nats.DefaultURL)
+	if err != nil {
+		t.Fatalf("Unexpected error on connect: %v", err)
+	}
+	defer nc.Close()
+
+	sc, err := Connect(clusterName, clientName,
+		MaxPubAcksInFlight(1),
+		PubAckWait(time.Second),
+		NatsConn(nc))
+	if err != nil {
+		t.Fatalf("Expected to connect correctly, got err %v", err)
+	}
+	// Don't defer the close of connection since the server is stopped,
+	// the close would delay the test.
+
+	// Cause the ACK to not come by shutdown the server now
+	s.Shutdown()
+
+	msg := []byte("hello")
+
+	// Send more than one message, if MaxPubAcksInFlight() works, one
+	// of the publish call should block for up to PubAckWait.
+	start := time.Now()
+	for i := 0; i < 2; i++ {
+		if _, err := sc.PublishAsync("foo", msg, nil); err != nil {
+			t.Fatalf("Unexpected error on publish: %v", err)
+		}
+	}
+	end := time.Now()
+	// So if the loop ended before the PubAckWait timeout, then it's a failure.
+	if end.Sub(start) < time.Second {
+		t.Fatal("Should have blocked after 1 message sent")
+	}
+}
