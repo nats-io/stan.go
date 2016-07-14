@@ -73,10 +73,9 @@ func main() {
 
 	// Run Subscribers first
 	startwg.Add(*numSubs)
-	subCounts := bench.MsgsPerClient(*numMsgs, *numSubs)
 	for i := 0; i < *numSubs; i++ {
 		subID := fmt.Sprintf("%s-sub-%d", *clientID, i)
-		go runSubscriber(&startwg, &donewg, opts, subCounts[i], *messageSize, *ignoreOld, subID)
+		go runSubscriber(&startwg, &donewg, opts, *numMsgs, *messageSize, *ignoreOld, subID)
 	}
 	startwg.Wait()
 
