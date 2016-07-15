@@ -128,7 +128,7 @@ Advanced users may wish to process these publish acknowledgements manually to ac
 ```go
     ackHandler := func(ackedNuid string, err error) {
         if err != nil {
-            log.Printf("Warning: error publishing msg id %s: %v\n, ackedNuid, err.Error())
+            log.Printf("Warning: error publishing msg id %s: %v\n", ackedNuid, err.Error())
         } else {
             log.Printf("Received ack for msg id %s\n", ackedNuid)
         }
@@ -167,10 +167,10 @@ This mismatch is commonly called a "fast producer/slow consumer" problem, and ma
 
 ### Publisher rate limiting
 
-NATS Streaming provides a connection option called `MaxPubAcksInFlight` that effectively limits the number of unacknowledged messages that a publisher may have in-flight at any given time. When this maximum is reached, further `PublishAsync()` calls will block until the number of unacknowledged messages falls below the specified limit. ex:
+NATS Streaming provides a connection option called `MaxPubAcksInflight` that effectively limits the number of unacknowledged messages that a publisher may have in-flight at any given time. When this maximum is reached, further `PublishAsync()` calls will block until the number of unacknowledged messages falls below the specified limit. ex:
 
 ```go
-sc, _ := stan.Connect(clusterID, clientID, MaxPubAcksInFlight(25))
+sc, _ := stan.Connect(clusterID, clientID, MaxPubAcksInflight(25))
 
 ah := func(nuid string, err error) {
     // process the ack
@@ -186,7 +186,7 @@ for i := 1; i < 1000; i++ {
 
 ### Subscriber rate limiting
 
-Rate limiting may also be accomplished on the subscriber side, on a per-subscription basis, using a subscription option called `MaxInFlight`.
+Rate limiting may also be accomplished on the subscriber side, on a per-subscription basis, using a subscription option called `MaxInflight`.
 This option specifies the maximum number of outstanding acknowledgements (messages that have been delivered but not acknowledged) that NATS Streaming will allow for a given subscription.
 When this limit is reached, NATS Streaming will suspend delivery of messages to this subscription until the number of unacknowledged messages falls below the specified limit. ex:
 
@@ -198,7 +198,7 @@ sc.Subscribe("foo", func(m *stan.Msg) {
   // Does not ack, or takes a very long time to ack
   ...
   // Message delivery will suspend when the number of unacknowledged messages reaches 25
-}, stan.SetManualAckMode(), stan.MaxInFlight(25))
+}, stan.SetManualAckMode(), stan.MaxInflight(25))
 
 ```
 
