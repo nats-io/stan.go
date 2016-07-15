@@ -114,9 +114,9 @@ func PubAckWait(t time.Duration) Option {
 	}
 }
 
-// MaxPubAcksInFlight is an Option to set the maximum number of published
+// MaxPubAcksInflight is an Option to set the maximum number of published
 // messages without outstanding ACKs from the server.
-func MaxPubAcksInFlight(max int) Option {
+func MaxPubAcksInflight(max int) Option {
 	return func(o *Options) error {
 		o.MaxPubAcksInflight = max
 		return nil
