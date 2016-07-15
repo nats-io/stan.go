@@ -22,7 +22,7 @@ const (
 	DefaultNumPubs            = 1
 	DefaultNumSubs            = 0
 	DefaultAsync              = false
-	DefaultMessageSize        = -1
+	DefaultMessageSize        = 128
 	DefaultIgnoreOld          = false
 	DefaultMaxPubAcksInflight = 1000
 	DefaultClientID           = "benchmark"
