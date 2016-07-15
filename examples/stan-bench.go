@@ -102,16 +102,9 @@ func main() {
 	}
 }
 
-func setMaxPubAcksInflight(val int) stan.Option {
-	return func(o *stan.Options) error {
-		o.MaxPubAcksInflight = val
-		return nil
-	}
-}
+func runPublisher(startwg, donewg *sync.WaitGroup, opts nats.Options, numMsgs int, msgSize int, async bool, pubID string, maxPubAcksInflight int) {
 
-func runPublisher(startwg, donewg *sync.WaitGroup, opts nats.Options, numMsgs int, msgSize int, async bool, pubID string, maxPubAcksInFlight int) {
-
-	snc, err := stan.Connect("test-cluster", pubID, setMaxPubAcksInflight(maxPubAcksInFlight))
+	snc, err := stan.Connect("test-cluster", pubID, stan.MaxPubAcksInflight(maxPubAcksInflight))
 	if err != nil {
 		log.Fatalf("Publisher %s can't connect: %v\n", pubID, err)
 	}

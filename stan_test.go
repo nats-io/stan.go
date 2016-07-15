@@ -1091,7 +1091,7 @@ func TestRedelivery(t *testing.T) {
 	}
 }
 
-func TestRedeliveryHonorMaxInFlight(t *testing.T) {
+func TestRedeliveryHonorMaxInflight(t *testing.T) {
 	// Run a NATS Streaming server
 	s := RunServer(clusterName)
 	defer s.Shutdown()
@@ -1889,7 +1889,7 @@ func TestNatsConn(t *testing.T) {
 	}
 }
 
-func TestMaxPubAcksInFlight(t *testing.T) {
+func TestMaxPubAcksInflight(t *testing.T) {
 	s := RunServer(clusterName)
 	defer s.Shutdown()
 
@@ -1900,7 +1900,7 @@ func TestMaxPubAcksInFlight(t *testing.T) {
 	defer nc.Close()
 
 	sc, err := Connect(clusterName, clientName,
-		MaxPubAcksInFlight(1),
+		MaxPubAcksInflight(1),
 		PubAckWait(time.Second),
 		NatsConn(nc))
 	if err != nil {
@@ -1914,7 +1914,7 @@ func TestMaxPubAcksInFlight(t *testing.T) {
 
 	msg := []byte("hello")
 
-	// Send more than one message, if MaxPubAcksInFlight() works, one
+	// Send more than one message, if MaxPubAcksInflight() works, one
 	// of the publish call should block for up to PubAckWait.
 	start := time.Now()
 	for i := 0; i < 2; i++ {
