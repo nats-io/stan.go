@@ -97,6 +97,14 @@ var DefaultOptions = Options{
 // Option is a function on the options for a connection.
 type Option func(*Options) error
 
+// NatsURL is an Option to set the URL the client should connect to.
+func NatsURL(u string) Option {
+	return func(o *Options) error {
+		o.NatsURL = u
+		return nil
+	}
+}
+
 // ConnectWait is an Option to set the timeout for establishing a connection.
 func ConnectWait(t time.Duration) Option {
 	return func(o *Options) error {
