@@ -18,8 +18,6 @@ NATS Streaming provides the following high-level feature set:
 - Please raise questions/issues via the [Issue Tracker](https://github.com/nats-io/go-nats-streaming/issues) or via the #stan-preview channel on natsio.slack.com (contact larry@apcera.com or brian@apcera.com for access)
 
 ## Known Issues
-- When an application crashes and immediately tries to reconnect, there is a known issue where the server may prevent it from doing so. This will be fixed shortly.
-- Persistence is memory based at this point in development; file based persistence is underway and will be made available soon.
 - Time- and sequence-based subscriptions are exact. Requesting a time or seqno before the earliest stored message for a subject will result in an error (in SubscriptionRequest.Error)
 
 ## Installation
@@ -55,6 +53,7 @@ sc.Close()
 ### Subscription Start (i.e. Replay) Options
 
 NATS Streaming subscriptions are similar to NATS subscriptions, but clients may start their subscription at an earlier point in the message stream, allowing them to receive messages that were published before this client registered interest.
+
 The options are described with examples below:
 
 ```go
@@ -116,6 +115,11 @@ sc.Subscribe("foo", func(m *stan.Msg) {
 ...
 // client receives messages 41-current
 ```
+
+### Wildcard Subscriptions
+
+NATS Streaming subscriptions **do not** support wildcards.
+
 
 ## Advanced Usage
 
