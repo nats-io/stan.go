@@ -54,8 +54,6 @@ sc.Close()
 
 NATS Streaming subscriptions are similar to NATS subscriptions, but clients may start their subscription at an earlier point in the message stream, allowing them to receive messages that were published before this client registered interest.
 
-Note that NATS Streaming subscriptions do not support wildcards.
-
 The options are described with examples below:
 
 ```go
@@ -117,6 +115,11 @@ sc.Subscribe("foo", func(m *stan.Msg) {
 ...
 // client receives messages 41-current
 ```
+
+### Wildcard Subscriptions
+
+NATS Streaming subscriptions **do not** support wildcards.
+
 
 ## Advanced Usage
 
