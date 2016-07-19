@@ -11,7 +11,7 @@ import (
 	"os/signal"
 	"time"
 
-	. "github.com/nats-io/go-nats-streaming"
+	"github.com/nats-io/go-nats-streaming"
 	"github.com/nats-io/go-nats-streaming/pb"
 )
 
@@ -39,7 +39,7 @@ func usage() {
 	log.Fatalf(usageStr)
 }
 
-func printMsg(m *Msg, i int) {
+func printMsg(m *stan.Msg, i int) {
 	log.Printf("[#%d] Received on [%s]: '%s'\n", i, m.Subject, m)
 }
 
@@ -58,8 +58,8 @@ func main() {
 
 	//	defaultID := fmt.Sprintf("client.%s", nuid.Next())
 
-	flag.StringVar(&URL, "s", DefaultNatsURL, "The nats server URLs (separated by comma)")
-	flag.StringVar(&URL, "server", DefaultNatsURL, "The nats server URLs (separated by comma)")
+	flag.StringVar(&URL, "s", stan.DefaultNatsURL, "The nats server URLs (separated by comma)")
+	flag.StringVar(&URL, "server", stan.DefaultNatsURL, "The nats server URLs (separated by comma)")
 	flag.StringVar(&clusterID, "c", "test-cluster", "The NATS Streaming cluster ID")
 	flag.StringVar(&clusterID, "cluster", "test-cluster", "The NATS Streaming cluster ID")
 	flag.StringVar(&clientID, "id", "", "The NATS Streaming client ID to connect with")
@@ -89,7 +89,7 @@ func main() {
 		usage()
 	}
 
-	sc, err := Connect(clusterID, clientID, NatsURL(URL))
+	sc, err := stan.Connect(clusterID, clientID, stan.NatsURL(URL))
 	if err != nil {
 		log.Fatalf("Can't connect: %v.\nMake sure a NATS Streaming Server is running at: %s", err, URL)
 	}
@@ -97,30 +97,30 @@ func main() {
 
 	subj, i := args[0], 0
 
-	mcb := func(msg *Msg) {
+	mcb := func(msg *stan.Msg) {
 		i++
 		printMsg(msg, i)
 	}
 
-	startOpt := StartAt(pb.StartPosition_NewOnly)
+	startOpt := stan.StartAt(pb.StartPosition_NewOnly)
 
 	if startSeq != 0 {
-		startOpt = StartAtSequence(startSeq)
+		startOpt = stan.StartAtSequence(startSeq)
 	} else if deliverLast == true {
-		startOpt = StartWithLastReceived()
+		startOpt = stan.StartWithLastReceived()
 	} else if deliverAll == true {
 		log.Print("subscribing with DeliverAllAvailable")
-		startOpt = DeliverAllAvailable()
+		startOpt = stan.DeliverAllAvailable()
 	} else if startDelta != "" {
 		ago, err := time.ParseDuration(startDelta)
 		if err != nil {
 			sc.Close()
 			log.Fatal(err)
 		}
-		startOpt = StartAtTimeDelta(ago)
+		startOpt = stan.StartAtTimeDelta(ago)
 	}
 
-	sub, err := sc.QueueSubscribe(subj, qgroup, mcb, startOpt, DurableName(durable))
+	sub, err := sc.QueueSubscribe(subj, qgroup, mcb, startOpt, stan.DurableName(durable))
 	if err != nil {
 		sc.Close()
 		log.Fatal(err)
