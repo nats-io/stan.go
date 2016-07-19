@@ -34,7 +34,7 @@ func main() {
 	var clusterID string
 	var clientID string
 	var async bool
-	URL := stan.DefaultNatsURL
+	var URL string
 
 	flag.StringVar(&URL, "s", stan.DefaultNatsURL, "The nats server URLs (separated by comma)")
 	flag.StringVar(&URL, "server", stan.DefaultNatsURL, "The nats server URLs (separated by comma)")

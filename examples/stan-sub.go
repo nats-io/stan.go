@@ -54,8 +54,7 @@ func main() {
 	var durable string
 	var qgroup string
 	var unsubscribe bool
-
-	URL := DefaultNatsURL
+	var URL string
 
 	//	defaultID := fmt.Sprintf("client.%s", nuid.Next())
 
