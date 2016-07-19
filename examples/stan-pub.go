@@ -31,14 +31,13 @@ func usage() {
 }
 
 func main() {
-	opts := stan.DefaultOptions
-
 	var clusterID string
 	var clientID string
 	var async bool
+	var URL string
 
-	flag.StringVar(&opts.NatsURL, "s", stan.DefaultNatsURL, "The nats server URLs (separated by comma)")
-	flag.StringVar(&opts.NatsURL, "server", stan.DefaultNatsURL, "The nats server URLs (separated by comma)")
+	flag.StringVar(&URL, "s", stan.DefaultNatsURL, "The nats server URLs (separated by comma)")
+	flag.StringVar(&URL, "server", stan.DefaultNatsURL, "The nats server URLs (separated by comma)")
 	flag.StringVar(&clusterID, "c", "test-cluster", "The NATS Streaming cluster ID")
 	flag.StringVar(&clusterID, "cluster", "test-cluster", "The NATS Streaming cluster ID")
 	flag.StringVar(&clientID, "id", "stan-pub", "The NATS Streaming client ID to connect with")
@@ -56,9 +55,9 @@ func main() {
 		usage()
 	}
 
-	sc, err := stan.Connect(clusterID, clientID)
+	sc, err := stan.Connect(clusterID, clientID, stan.NatsURL(URL))
 	if err != nil {
-		log.Fatalf("Can't connect: %v.\nMake sure a NATS Streaming Server is running at: %s", err, opts.NatsURL)
+		log.Fatalf("Can't connect: %v.\nMake sure a NATS Streaming Server is running at: %s", err, URL)
 	}
 	defer sc.Close()
 

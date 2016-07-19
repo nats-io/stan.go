@@ -1928,3 +1928,14 @@ func TestMaxPubAcksInflight(t *testing.T) {
 		t.Fatal("Should have blocked after 1 message sent")
 	}
 }
+
+func TestNatsURLOption(t *testing.T) {
+	s := RunServer(clusterName)
+	defer s.Shutdown()
+
+	sc, err := Connect(clusterName, clientName, NatsURL("nats://localhost:5555"))
+	if err == nil {
+		sc.Close()
+		t.Fatal("Expected connect to fail")
+	}
+}

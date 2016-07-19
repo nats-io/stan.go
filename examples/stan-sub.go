@@ -44,8 +44,6 @@ func printMsg(m *Msg, i int) {
 }
 
 func main() {
-	opts := DefaultOptions
-
 	var clusterID string
 	var clientID string
 	var showTime bool
@@ -56,11 +54,12 @@ func main() {
 	var durable string
 	var qgroup string
 	var unsubscribe bool
+	var URL string
 
 	//	defaultID := fmt.Sprintf("client.%s", nuid.Next())
 
-	flag.StringVar(&opts.NatsURL, "s", DefaultNatsURL, "The nats server URLs (separated by comma)")
-	flag.StringVar(&opts.NatsURL, "server", DefaultNatsURL, "The nats server URLs (separated by comma)")
+	flag.StringVar(&URL, "s", DefaultNatsURL, "The nats server URLs (separated by comma)")
+	flag.StringVar(&URL, "server", DefaultNatsURL, "The nats server URLs (separated by comma)")
 	flag.StringVar(&clusterID, "c", "test-cluster", "The NATS Streaming cluster ID")
 	flag.StringVar(&clusterID, "cluster", "test-cluster", "The NATS Streaming cluster ID")
 	flag.StringVar(&clientID, "id", "", "The NATS Streaming client ID to connect with")
@@ -90,12 +89,11 @@ func main() {
 		usage()
 	}
 
-
-	sc, err := Connect(clusterID, clientID)
+	sc, err := Connect(clusterID, clientID, NatsURL(URL))
 	if err != nil {
-		log.Fatalf("Can't connect: %v.\nMake sure a NATS Streaming Server is running at: %s", err, opts.NatsURL)
+		log.Fatalf("Can't connect: %v.\nMake sure a NATS Streaming Server is running at: %s", err, URL)
 	}
-	log.Printf("Connected to %s clusterID: [%s] clientID: [%s]\n", opts.NatsURL, clusterID, clientID)
+	log.Printf("Connected to %s clusterID: [%s] clientID: [%s]\n", URL, clusterID, clientID)
 
 	subj, i := args[0], 0
 
