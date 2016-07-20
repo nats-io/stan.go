@@ -27,8 +27,6 @@ NATS Streaming provides the following high-level feature set:
 go get github.com/nats-io/go-nats-streaming
 ```
 
-For the Preview, `stan-server` is provided in binary form for Linux and Mac [here](https://github.com/nats-io/stan-server-preview/releases)
-
 ## Basic Usage
 
 ```go
