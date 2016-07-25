@@ -329,39 +329,6 @@ func TestBasicPubSub(t *testing.T) {
 	}
 }
 
-func TestBasicPubSubFlowControl(t *testing.T) {
-	// Run a NATS Streaming server
-	s := RunServer(clusterName)
-	defer s.Shutdown()
-
-	sc := NewDefaultConnection(t)
-	defer sc.Close()
-
-	ch := make(chan bool)
-	received := int32(0)
-	toSend := int32(500)
-	hw := []byte("Hello World")
-
-	sub, err := sc.Subscribe("foo", func(m *Msg) {
-		if nr := atomic.AddInt32(&received, 1); nr >= int32(toSend) {
-			ch <- true
-		}
-	}, MaxInflight(25))
-	if err != nil {
-		t.Fatalf("Unexpected error on Subscribe, got %v", err)
-	}
-	defer sub.Unsubscribe()
-
-	for i := int32(0); i < toSend; i++ {
-		if err := sc.Publish("foo", hw); err != nil {
-			t.Fatalf("Received error on publish: %v\n", err)
-		}
-	}
-	if err := Wait(ch); err != nil {
-		t.Fatal("Did not receive our messages")
-	}
-}
-
 func TestBasicPubQueueSub(t *testing.T) {
 	// Run a NATS Streaming server
 	s := RunServer(clusterName)
@@ -1791,10 +1758,13 @@ func TestNoDuplicatesOnSubscriberStart(t *testing.T) {
 }
 
 func TestMaxChannels(t *testing.T) {
-	t.Skip("Skipping test for now around channel limits")
+	// Set a small number of max channels
+	opts := server.GetDefaultOptions()
+	opts.ID = clusterName
+	opts.MaxChannels = 10
 
 	// Run a NATS Streaming server
-	s := RunServer(clusterName)
+	s := server.RunServerWithOpts(opts, nil)
 	defer s.Shutdown()
 
 	sc := NewDefaultConnection(t)
@@ -1803,10 +1773,8 @@ func TestMaxChannels(t *testing.T) {
 	hw := []byte("Hello World")
 	var subject string
 
-	// FIXME(dlc) - Eventually configurable, but wanted test in place.
-	// Send to DefaultChannelLimit + 1
 	// These all should work fine
-	for i := 0; i < server.DefaultChannelLimit; i++ {
+	for i := 0; i < opts.MaxChannels; i++ {
 		subject = fmt.Sprintf("CHAN-%d", i)
 		sc.PublishAsync(subject, hw, nil)
 	}
