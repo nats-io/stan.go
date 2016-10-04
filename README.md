@@ -15,7 +15,7 @@ NATS Streaming provides the following high-level feature set:
 
 ## Notes
 
-- Please raise questions/issues via the [Issue Tracker](https://github.com/nats-io/go-nats-streaming/issues) or via the #stan-preview channel on natsio.slack.com (contact larry@apcera.com or brian@apcera.com for access)
+- Please raise questions/issues via the [Issue Tracker](https://github.com/nats-io/go-nats-streaming/issues).
 
 ## Known Issues
 - Time- and sequence-based subscriptions are exact. Requesting a time or seqno before the earliest stored message for a subject will result in an error (in SubscriptionRequest.Error)
@@ -113,6 +113,127 @@ sc.Subscribe("foo", func(m *stan.Msg) {
 ...
 // client receives messages 41-current
 ```
+
+### Queue Groups
+
+All subscriptions with the same queue name (regardless of the connection
+they originate from) will form a queue group.
+Each message will be delivered to only one subscriber per queue group,
+using queuing semantics. You can have as many queue groups as you wish.
+
+Normal subscribers will continue to work as expected.
+
+#### Creating a Queue Group
+
+A Queue Group is created when the first queue subscriber with a non existing
+group name is created. If the group already exists, the member is added to
+the group.
+
+```go
+sc, _ := stan.Connect("test-cluster", "clientid")
+
+// Create a queue subscriber on "foo" for group "bar"
+qsub1, _ := sc.QueueSubscribe("foo", "bar", qcb)
+
+// Add a second member
+qsub2, _ := sc.QueueSubscribe("foo", "bar", qcb)
+
+// Notice that you can have a regular subscriber on that subject
+sub, _ := sc.Subscribe("foo", cb)
+
+// A message on "foo" will be received by sub and qsub1 or qsub2.
+```
+
+#### Start Position
+
+Note that once a queue group is formed, a member's start position is ignored
+when added to the group. It will start receive messages from the last
+position in the group.
+
+Suppose the channel `foo` exists and there are `500` messages stored, the group
+`bar` is already created, there are 2 members and the last
+message sequence sent is `100`. A new member is added. Note its start position:
+
+```go
+sc.QueueSubscribe("foo", "bar", qcb, stan.StartAtSequence(200))
+```
+
+This will not produce any error, but the start position will be ignored. Assuming
+this member would be the one receiving the next message, it would receive message
+sequence `101`.
+
+#### Leaving the Group
+
+There are two ways of leaving the group: closing the subscriber's connection or
+calling `Unsubscribe`:
+
+```go
+// Have qsub leave the queue group
+qsub.Unsubscribe()
+```
+
+If the leaving member had un-acknowledged messages, those messages are reassigned
+to the remaining members.
+
+#### Closing a Queue Group
+
+There is no special API for that. Once all members have left (either calling `Unsubscribe`,
+or their connections are closed), the group is removed from the server.
+
+The next call to `QueueSubscribe` with the same group name will create a brand new group,
+that is, the start position will take effect and delivery will start from there.
+
+### Durable Queue Groups
+
+As described above, for non durable queue subsribers, when the last member leaves the group,
+that group is removed. A Durable Queue Group allows you to have all member leave but still
+maintain state. When a member re-joins, it starts at the last position in that group.
+
+#### Creating a Durable Queue Group
+
+Similar to normal queue group, but use `DurableName` option to specify durability.
+
+```go
+sc.QueueSubscribe("foo", "bar", qcb, stan.DurableName("dur"))
+```
+A group called `dur:bar` (the concatenation of durable name and group name) is created in
+the server. This means two things:
+
+- The character `:` is not allowed for a queue subscriber's durable name.
+- Durable and non-durable queue groups with the same name can coexist.
+
+```go
+// Non durable queue subscriber on group "bar"
+qsub, _ := sc.QueueSubscribe("foo", "bar", qcb)
+
+// Durable queue subscriber on group "bar"
+durQsub, _ := sc.QueueSubscribe("foo", "bar", qcb, stan.DurableName("mydurablegroup"))
+
+// The same message produced on "foo" would be received by both queue subscribers.
+```
+
+#### Start Position
+
+Same rule than for non-durable queue subscribers apply.
+
+#### Leaving the Group
+
+As for non-durable queue subscribers, if a member's connection is closed, or if
+`Unsubscribe` its called, the member leaves the group. Any unacknowledged message
+is transfered to remaining members. See *Closing the Group* for important difference
+with non-durable queue subscribers.
+
+#### Closing the Group
+
+The *last* member calling `Unsubscribe` will close (that is destroy) the
+group. So if you want to maintain durability of the group, you should not be
+calling `Unsubscribe`.
+
+So unlike for non-durable queue subscribers, it is possible to maintain a queue group
+with no member in the server. When a new member re-joins the durable queue group,
+it will resume from where the group left of, actually first receiving all unacknowledged
+messages that may have been left when the last member previously left.
+
 
 ### Wildcard Subscriptions
 

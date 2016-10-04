@@ -263,16 +263,99 @@ func TestBasicQueueSubscription(t *testing.T) {
 	sc := NewDefaultConnection(t)
 	defer sc.Close()
 
-	sub, err := sc.QueueSubscribe("foo", "bar", func(m *Msg) {})
+	ch := make(chan bool)
+	count := uint32(0)
+	cb := func(m *Msg) {
+		if m.Sequence == 1 {
+			if atomic.AddUint32(&count, 1) == 2 {
+				ch <- true
+			}
+		}
+	}
+
+	sub, err := sc.QueueSubscribe("foo", "bar", cb)
 	if err != nil {
 		t.Fatalf("Expected no error on Subscribe, got %v\n", err)
 	}
 	defer sub.Unsubscribe()
 
-	// Test that we can not set durable status on queue subscribers.
-	_, err = sc.QueueSubscribe("foo", "bar", func(m *Msg) {}, DurableName("durable-queue-sub"))
-	if err == nil {
+	// Test that durable and non durable queue subscribers with
+	// same name can coexist and they both receive the same message.
+	if _, err = sc.QueueSubscribe("foo", "bar", cb, DurableName("durable-queue-sub")); err != nil {
 		t.Fatalf("Expected non-nil error on QueueSubscribe with DurableName")
+	}
+
+	// Publish a message
+	if err := sc.Publish("foo", []byte("msg")); err != nil {
+		t.Fatalf("Unexpected error on publish: %v", err)
+	}
+	// Wait for both messages to be received.
+	if err := Wait(ch); err != nil {
+		t.Fatal("Did not get our message")
+	}
+
+	// Check that one cannot use ':' for the queue durable name.
+	if _, err := sc.QueueSubscribe("foo", "bar", cb, DurableName("my:dur")); err == nil {
+		t.Fatal("Expected to get an error regarding durable name")
+	}
+}
+
+func TestDurableQueueSubscriber(t *testing.T) {
+	s := RunServer(clusterName)
+	defer s.Shutdown()
+
+	sc := NewDefaultConnection(t)
+	defer sc.Close()
+
+	total := 5
+	for i := 0; i < total; i++ {
+		if err := sc.Publish("foo", []byte("msg")); err != nil {
+			t.Fatalf("Unexpected error on publish: %v", err)
+		}
+	}
+	ch := make(chan bool)
+	firstBatch := uint64(total)
+	secondBatch := uint64(2 * total)
+	cb := func(m *Msg) {
+		if !m.Redelivered &&
+			(m.Sequence == uint64(firstBatch) || m.Sequence == uint64(secondBatch)) {
+			ch <- true
+		}
+	}
+	if _, err := sc.QueueSubscribe("foo", "bar", cb,
+		DeliverAllAvailable(),
+		DurableName("durable-queue-sub")); err != nil {
+		t.Fatalf("Expected non-nil error on QueueSubscribe with DurableName")
+	}
+	if err := Wait(ch); err != nil {
+		t.Fatal("Did not get our message")
+	}
+	// Give a chance to ACKs to make it to the server.
+	// This step is not necessary. Worse could happen is that messages
+	// are redelivered. This is why we check on !m.Redelivered in the
+	// callback to validate the counts.
+	time.Sleep(500 * time.Millisecond)
+	// Close connection
+	sc.Close()
+
+	// Create new connection
+	sc = NewDefaultConnection(t)
+	defer sc.Close()
+	// Send more messages
+	for i := 0; i < total; i++ {
+		if err := sc.Publish("foo", []byte("msg")); err != nil {
+			t.Fatalf("Unexpected error on publish: %v", err)
+		}
+	}
+	// Create durable queue sub, it should receive from where it left of,
+	// and ignore the start position
+	if _, err := sc.QueueSubscribe("foo", "bar", cb,
+		StartAtSequence(uint64(10*total)),
+		DurableName("durable-queue-sub")); err != nil {
+		t.Fatalf("Expected non-nil error on QueueSubscribe with DurableName")
+	}
+	if err := Wait(ch); err != nil {
+		t.Fatal("Did not get our message")
 	}
 }
 
