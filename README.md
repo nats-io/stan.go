@@ -125,9 +125,8 @@ Normal subscribers will continue to work as expected.
 
 #### Creating a Queue Group
 
-A Queue Group is created when the first queue subscriber with a non existing
-group name is created. If the group already exists, the member is added to
-the group.
+A queue group is automatically created when the first queue subscriber is
+created. If the group already exists, the member is added to the group.
 
 ```go
 sc, _ := stan.Connect("test-cluster", "clientid")
@@ -151,14 +150,14 @@ when added to the group. It will start receive messages from the last
 position in the group.
 
 Suppose the channel `foo` exists and there are `500` messages stored, the group
-`bar` is already created, there are 2 members and the last
+`bar` is already created, there are two members and the last
 message sequence sent is `100`. A new member is added. Note its start position:
 
 ```go
 sc.QueueSubscribe("foo", "bar", qcb, stan.StartAtSequence(200))
 ```
 
-This will not produce any error, but the start position will be ignored. Assuming
+This will not produce an error, but the start position will be ignored. Assuming
 this member would be the one receiving the next message, it would receive message
 sequence `101`.
 
@@ -186,12 +185,13 @@ that is, the start position will take effect and delivery will start from there.
 ### Durable Queue Groups
 
 As described above, for non durable queue subsribers, when the last member leaves the group,
-that group is removed. A Durable Queue Group allows you to have all member leave but still
+that group is removed. A durable queue group allows you to have all members leave but still
 maintain state. When a member re-joins, it starts at the last position in that group.
 
 #### Creating a Durable Queue Group
 
-Similar to normal queue group, but use `DurableName` option to specify durability.
+A durable queue group is created in a similar manner as that of a standard queue group,
+except the `DurableName` option must be used to specify durability.
 
 ```go
 sc.QueueSubscribe("foo", "bar", qcb, stan.DurableName("dur"))
@@ -214,7 +214,7 @@ durQsub, _ := sc.QueueSubscribe("foo", "bar", qcb, stan.DurableName("mydurablegr
 
 #### Start Position
 
-Same rule than for non-durable queue subscribers apply.
+The rules for non-durable queue subscribers apply to durable subscribers.
 
 #### Leaving the Group
 
