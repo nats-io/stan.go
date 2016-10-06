@@ -193,7 +193,7 @@ func Connect(stanClusterID, clientID string, options ...Option) (Conn, error) {
 	}
 
 	// Send Request to discover the cluster
-	discoverSubject := fmt.Sprintf("%s.%s", c.opts.DiscoverPrefix, stanClusterID)
+	discoverSubject := c.opts.DiscoverPrefix + "." + stanClusterID
 	req := &pb.ConnectRequest{ClientID: clientID, HeartbeatInbox: hbInbox}
 	b, _ := req.Marshal()
 	reply, err := c.nc.Request(discoverSubject, b, c.opts.ConnectTimeout)
@@ -223,7 +223,7 @@ func Connect(stanClusterID, clientID string, options ...Option) (Conn, error) {
 	c.closeRequests = cr.CloseRequests
 
 	// Setup the ACK subscription
-	c.ackSubject = fmt.Sprintf("%s.%s", DefaultACKPrefix, nuid.Next())
+	c.ackSubject = DefaultACKPrefix + "." + nuid.Next()
 	if c.ackSubscription, err = c.nc.Subscribe(c.ackSubject, c.processAck); err != nil {
 		c.Close()
 		return nil, err
@@ -359,7 +359,7 @@ func (sc *conn) publishAsync(subject string, data []byte, ah AckHandler, ch chan
 		return "", ErrConnectionClosed
 	}
 
-	subj := fmt.Sprintf("%s.%s", sc.pubPrefix, subject)
+	subj := sc.pubPrefix + "." + subject
 	// This is only what we need from PubMsg in the timer below,
 	// so do this so that pe doesn't escape (and we same on new object)
 	peGUID := nuid.Next()
