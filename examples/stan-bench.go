@@ -36,15 +36,15 @@ var benchmark *bench.Benchmark
 
 func main() {
 	var urls = flag.String("s", nats.DefaultURL, "The nats server URLs (separated by comma)")
-	var tls = flag.Bool("tls", false, "Use TLS Secure Connection")
-	var numPubs = flag.Int("np", DefaultNumPubs, "Number of Concurrent Publishers")
-	var numSubs = flag.Int("ns", DefaultNumSubs, "Number of Concurrent Subscribers")
-	var numMsgs = flag.Int("n", DefaultNumMsgs, "Number of Messages to Publish")
-	var async = flag.Bool("a", DefaultAsync, "Async Message Publishing")
-	var messageSize = flag.Int("ms", DefaultMessageSize, "Message Size in bytes.")
-	var ignoreOld = flag.Bool("io", DefaultIgnoreOld, "Subscribers Ignore Old Messages")
+	var tls = flag.Bool("tls", false, "Use TLS secure sonnection")
+	var numPubs = flag.Int("np", DefaultNumPubs, "Number of concurrent publishers")
+	var numSubs = flag.Int("ns", DefaultNumSubs, "Number of concurrent subscribers")
+	var numMsgs = flag.Int("n", DefaultNumMsgs, "Number of messages to publish")
+	var async = flag.Bool("a", DefaultAsync, "Async message publishing")
+	var messageSize = flag.Int("ms", DefaultMessageSize, "Message size in bytes.")
+	var ignoreOld = flag.Bool("io", DefaultIgnoreOld, "Subscribers ignore old messages")
 	var maxPubAcks = flag.Int("mpa", DefaultMaxPubAcksInflight, "Max number of published acks in flight")
-	var clientID = flag.String("id", DefaultClientID, "Benchmark process base client ID.")
+	var clientID = flag.String("id", DefaultClientID, "Benchmark process base client ID")
 	var csvFile = flag.String("csv", "", "Save bench data to csv file")
 
 	log.SetFlags(0)
