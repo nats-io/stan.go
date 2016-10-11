@@ -35,7 +35,7 @@ func usage() {
 var benchmark *bench.Benchmark
 
 func main() {
-	var urls = flag.String("s", nats.DefaultURL, "The nats server URLs (separated by comma)")
+	var urls = flag.String("s", nats.DefaultURL, "The NATS server URLs (separated by comma)")
 	var tls = flag.Bool("tls", false, "Use TLS secure sonnection")
 	var numPubs = flag.Int("np", DefaultNumPubs, "Number of concurrent publishers")
 	var numSubs = flag.Int("ns", DefaultNumSubs, "Number of concurrent subscribers")
