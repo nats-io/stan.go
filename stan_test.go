@@ -325,7 +325,7 @@ func TestDurableQueueSubscriber(t *testing.T) {
 	if _, err := sc.QueueSubscribe("foo", "bar", cb,
 		DeliverAllAvailable(),
 		DurableName("durable-queue-sub")); err != nil {
-		t.Fatalf("Expected non-nil error on QueueSubscribe with DurableName")
+		t.Fatalf("Unexpected error on QueueSubscribe with DurableName")
 	}
 	if err := Wait(ch); err != nil {
 		t.Fatal("Did not get our message")
@@ -352,7 +352,7 @@ func TestDurableQueueSubscriber(t *testing.T) {
 	if _, err := sc.QueueSubscribe("foo", "bar", cb,
 		StartAtSequence(uint64(10*total)),
 		DurableName("durable-queue-sub")); err != nil {
-		t.Fatalf("Expected non-nil error on QueueSubscribe with DurableName")
+		t.Fatalf("Unexpected error on QueueSubscribe with DurableName")
 	}
 	if err := Wait(ch); err != nil {
 		t.Fatal("Did not get our message")
