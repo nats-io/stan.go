@@ -282,7 +282,7 @@ func TestBasicQueueSubscription(t *testing.T) {
 	// Test that durable and non durable queue subscribers with
 	// same name can coexist and they both receive the same message.
 	if _, err = sc.QueueSubscribe("foo", "bar", cb, DurableName("durable-queue-sub")); err != nil {
-		t.Fatalf("Expected non-nil error on QueueSubscribe with DurableName")
+		t.Fatalf("Unexpected error on QueueSubscribe with DurableName")
 	}
 
 	// Publish a message
