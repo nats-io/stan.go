@@ -2,7 +2,7 @@ language: go
 sudo: false
 go:
 - 1.5.4
-- 1.6.2
+- 1.6.3
 install:
 - go get -t ./...
 - go get github.com/nats-io/nats-streaming-server
