@@ -46,7 +46,7 @@ func WaitTime(ch chan bool, timeout time.Duration) error {
 }
 
 func TestNoNats(t *testing.T) {
-	if _, err := Connect("someNonExistantServerID", "myTestClient"); err != nats.ErrNoServers {
+	if _, err := Connect("someNonExistentServerID", "myTestClient"); err != nats.ErrNoServers {
 		t.Fatalf("Expected NATS: No Servers err, got %v\n", err)
 	}
 }
@@ -58,7 +58,7 @@ func TestUnreachable(t *testing.T) {
 	// Non-Existent or Unreachable
 	connectTime := 25 * time.Millisecond
 	start := time.Now()
-	if _, err := Connect("someNonExistantServerID", "myTestClient", ConnectWait(connectTime)); err != ErrConnectReqTimeout {
+	if _, err := Connect("someNonExistentServerID", "myTestClient", ConnectWait(connectTime)); err != ErrConnectReqTimeout {
 		t.Fatalf("Expected Unreachable err, got %v\n", err)
 	}
 	if delta := time.Since(start); delta < connectTime {
@@ -109,7 +109,7 @@ func TestConnClosedOnConnectFailure(t *testing.T) {
 
 	// Non-Existent or Unreachable
 	connectTime := 25 * time.Millisecond
-	if _, err := Connect("someNonExistantServerID", "myTestClient", ConnectWait(connectTime)); err != ErrConnectReqTimeout {
+	if _, err := Connect("someNonExistentServerID", "myTestClient", ConnectWait(connectTime)); err != ErrConnectReqTimeout {
 		t.Fatalf("Expected Unreachable err, got %v\n", err)
 	}
 
@@ -1305,7 +1305,7 @@ func TestDurableSubscriber(t *testing.T) {
 		t.Fatalf("Unexpected error on Subscribe, got %v", err)
 	}
 
-	// Check that durables can not be subscribed to again by same client.
+	// Check that durables cannot be subscribed to again by same client.
 	_, err = sc.Subscribe("foo", nil, DurableName("durable-foo"))
 	if err == nil || err.Error() != server.ErrDupDurable.Error() {
 		t.Fatalf("Expected ErrDupSubscription error, got %v\n", err)
@@ -1699,7 +1699,7 @@ func TestRedeliveredFlag(t *testing.T) {
 
 // TestNoDuplicatesOnSubscriberStart tests that a subscriber does not
 // receive duplicate when requesting a replay while messages are being
-// published on it's subject.
+// published on its subject.
 func TestNoDuplicatesOnSubscriberStart(t *testing.T) {
 	// Run a NATS Streaming server
 	s := RunServer(clusterName)
