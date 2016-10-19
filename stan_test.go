@@ -1854,9 +1854,31 @@ func TestNatsConn(t *testing.T) {
 		t.Fatal("Wrapped conn should be nil after close")
 	}
 
+	// Bail if we have a custom connection but not connected
+	cnc := nats.Conn{Opts: nats.DefaultOptions}
+	sc, err := Connect(clusterName, clientName, NatsConn(&cnc))
+	if err != ErrBadConnection {
+		stackFatalf(t, "Expected to get an invalid connection error, got %v", err)
+	}
+
+	// Allow custom conn only if already connected
+	opts := nats.DefaultOptions
+	nc, err = opts.Connect()
+	if err != nil {
+		stackFatalf(t, "Expected to connect correctly, got err %v", err)
+	}
+	sc, err = Connect(clusterName, clientName, NatsConn(nc))
+	if err != nil {
+		stackFatalf(t, "Expected to connect correctly, got err %v", err)
+	}
+	nc.Close()
+	if nc.Status() != nats.CLOSED {
+		t.Fatal("Should have status set to CLOSED")
+	}
+
 	// Make sure we can get the Conn we provide.
 	nc = natstest.NewDefaultConnection(t)
-	sc, err := Connect(clusterName, clientName, NatsConn(nc))
+	sc, err = Connect(clusterName, clientName, NatsConn(nc))
 	if err != nil {
 		stackFatalf(t, "Expected to connect correctly, got err %v", err)
 	}
