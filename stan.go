@@ -183,7 +183,11 @@ func Connect(stanClusterID, clientID string, options ...Option) (Conn, error) {
 		}
 		c.nc = nc
 		c.ncOwned = true
+	} else if !c.nc.IsConnected() {
+		// Bail if the custom NATS connection is disconnected
+		return nil, ErrBadConnection
 	}
+
 	// Create a heartbeat inbox
 	hbInbox := nats.NewInbox()
 	var err error
