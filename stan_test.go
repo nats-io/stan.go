@@ -83,7 +83,7 @@ func stackFatalf(t tLogger, f string, args ...interface{}) {
 	lines = append(lines, msg)
 
 	// Generate the Stack of callers:
-	for i := 2; true; i++ {
+	for i := 1; true; i++ {
 		_, file, line, ok := runtime.Caller(i)
 		if ok == false {
 			break
@@ -1936,5 +1936,170 @@ func TestNatsURLOption(t *testing.T) {
 	if err == nil {
 		sc.Close()
 		t.Fatal("Expected connect to fail")
+	}
+}
+
+func TestTimeoutOnRequests(t *testing.T) {
+	s := RunServer(clusterName)
+	defer s.Shutdown()
+
+	sc := NewDefaultConnection(t)
+	defer sc.Close()
+
+	sub1, err := sc.Subscribe("foo", func(_ *Msg) {})
+	if err != nil {
+		t.Fatalf("Unexpected error on subscribe: %v", err)
+	}
+	sub2, err := sc.Subscribe("foo", func(_ *Msg) {})
+	if err != nil {
+		t.Fatalf("Unexpected error on subscribe: %v", err)
+	}
+
+	// For this test, change the reqTimeout to very low value
+	sc.(*conn).Lock()
+	sc.(*conn).opts.ConnectTimeout = 10 * time.Millisecond
+	sc.(*conn).Unlock()
+
+	// Shutdown server
+	s.Shutdown()
+
+	// Subscribe
+	if _, err := sc.Subscribe("foo", func(_ *Msg) {}); err != ErrSubReqTimeout {
+		t.Fatalf("Expected %v error, got %v", ErrSubReqTimeout, err)
+	}
+
+	// If connecting to an old server...
+	if sc.(*conn).subCloseRequests == "" {
+		// Trick the API into thinking that it can send,
+		// and make sure the call times-out
+		sc.(*conn).Lock()
+		sc.(*conn).subCloseRequests = "sub.close.subject"
+		sc.(*conn).Unlock()
+	}
+	// Subscription Close
+	if err := sub1.Close(); err != ErrCloseReqTimeout {
+		t.Fatalf("Expected %v error, got %v", ErrCloseReqTimeout, err)
+	}
+	// Unsubscribe
+	if err := sub2.Unsubscribe(); err != ErrUnsubReqTimeout {
+		t.Fatalf("Expected %v error, got %v", ErrUnsubReqTimeout, err)
+	}
+	// Connection Close
+	if err := sc.Close(); err != ErrCloseReqTimeout {
+		t.Fatalf("Expected %v error, got %v", ErrCloseReqTimeout, err)
+	}
+}
+
+func TestSubscriberClose(t *testing.T) {
+	s := RunServer(clusterName)
+	defer s.Shutdown()
+
+	sc := NewDefaultConnection(t)
+	defer sc.Close()
+
+	// If old server, Close() is expected to fail.
+	supported := sc.(*conn).subCloseRequests != ""
+
+	sub, err := sc.Subscribe("foo", func(_ *Msg) {})
+	if err != nil {
+		t.Fatalf("Unexpected error on subscribe: %v", err)
+	}
+	err = sub.Close()
+	if supported && err != nil {
+		t.Fatalf("Unexpected error on close: %v", err)
+	} else if !supported && err != ErrNoServerSupport {
+		t.Fatalf("Expected %v, got %v", ErrNoServerSupport, err)
+	}
+
+	sub, err = sc.QueueSubscribe("foo", "group", func(_ *Msg) {})
+	if err != nil {
+		t.Fatalf("Unexpected error on subscribe: %v", err)
+	}
+	err = sub.Close()
+	if supported && err != nil {
+		t.Fatalf("Unexpected error on close: %v", err)
+	} else if !supported && err != ErrNoServerSupport {
+		t.Fatalf("Expected %v, got %v", ErrNoServerSupport, err)
+	}
+
+	sc.Close()
+
+	closeSubscriber(t, "dursub", "sub")
+	closeSubscriber(t, "durqueuesub", "queue")
+}
+
+func closeSubscriber(t *testing.T, channel, subType string) {
+	sc := NewDefaultConnection(t)
+	defer sc.Close()
+
+	// Send 1 message
+	if err := sc.Publish(channel, []byte("msg")); err != nil {
+		t.Fatalf("Unexpected error on publish: %v", err)
+	}
+	count := 0
+	ch := make(chan bool)
+	errCh := make(chan bool)
+	cb := func(m *Msg) {
+		count++
+		if m.Sequence != uint64(count) {
+			errCh <- true
+			return
+		}
+		ch <- true
+	}
+	// Create a durable
+	var sub Subscription
+	var err error
+	if subType == "sub" {
+		sub, err = sc.Subscribe(channel, cb, DurableName("dur"), DeliverAllAvailable())
+	} else {
+		sub, err = sc.QueueSubscribe(channel, "group", cb, DurableName("dur"), DeliverAllAvailable())
+	}
+	if err != nil {
+		stackFatalf(t, "Unexpected error on subscribe: %v", err)
+	}
+	// Wait to receive 1st message
+	if err := Wait(ch); err != nil {
+		stackFatalf(t, "Did not get our message")
+	}
+	// Wait a bit to reduce risk of server processing unsubscribe before ACK
+	time.Sleep(500 * time.Millisecond)
+	// Close durable
+	err = sub.Close()
+	// Feature supported or not by the server
+	supported := sc.(*conn).subCloseRequests != ""
+	// If connecting to an older server, error is expected
+	if !supported && err != ErrNoServerSupport {
+		stackFatalf(t, "Expected %v error, got %v", ErrNoServerSupport, err)
+	}
+	if !supported {
+		// Nothing much to test
+		sub.Unsubscribe()
+		return
+	}
+	// Here, server supports feature
+	if err != nil {
+		stackFatalf(t, "Unexpected error on close: %v", err)
+	}
+	// Send 2nd message
+	if err := sc.Publish(channel, []byte("msg")); err != nil {
+		stackFatalf(t, "Unexpected error on publish: %v", err)
+	}
+	// Restart durable
+	if subType == "sub" {
+		sub, err = sc.Subscribe(channel, cb, DurableName("dur"), DeliverAllAvailable())
+	} else {
+		sub, err = sc.QueueSubscribe(channel, "group", cb, DurableName("dur"), DeliverAllAvailable())
+	}
+	if err != nil {
+		stackFatalf(t, "Unexpected error on subscribe: %v", err)
+	}
+	defer sub.Unsubscribe()
+	select {
+	case <-errCh:
+		stackFatalf(t, "Unexpected message received")
+	case <-ch:
+	case <-time.After(5 * time.Second):
+		stackFatalf(t, "Timeout waiting for messages")
 	}
 }
