@@ -1938,3 +1938,59 @@ func TestNatsURLOption(t *testing.T) {
 		t.Fatal("Expected connect to fail")
 	}
 }
+
+func TestSubscriptionPending(t *testing.T) {
+	// Run a NATS Streaming server
+	s := RunServer(clusterName)
+	defer s.Shutdown()
+
+	sc := NewDefaultConnection(t)
+	defer sc.Close()
+
+	nc := sc.NatsConn()
+	defer nc.Close()
+
+	total := 100
+	msg := []byte("0123456789")
+
+	inCb := make(chan bool)
+	block := make(chan bool)
+	cb := func(m *Msg) {
+		inCb <- true
+		<-block
+	}
+
+	sub, _ := sc.QueueSubscribe("foo", "bar", cb)
+	defer sub.Unsubscribe()
+
+	// Publish five messages
+	for i := 0; i < total; i++ {
+		sc.Publish("foo", msg)
+	}
+	nc.Flush()
+
+	// Wait for our first message
+	if err := Wait(inCb); err != nil {
+		t.Fatal("No message received")
+	}
+
+	m, b, _ := sub.Pending()
+	// FIXME(jack0) nats streaming appends clientid, guid, and subject to messages
+	mlen := len(msg) + 19
+	totalSize := total * mlen
+
+	if m != total && m != total-1 {
+		t.Fatalf("Expected msgs of %d or %d, got %d\n", total, total-1, m)
+	}
+	if b != totalSize && b != totalSize-mlen {
+		t.Fatalf("Expected bytes of %d or %d, got %d\n",
+			totalSize, totalSize-mlen, b)
+	}
+
+	close(block)
+	sub.Unsubscribe()
+
+	if _, _, err := sub.Pending(); err == nil {
+		t.Fatal("Calling Pending() on closed subscription should fail")
+	}
+}

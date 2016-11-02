@@ -30,6 +30,7 @@ type Msg struct {
 // Subscription represents a subscription within the NATS Streaming cluster. Subscriptions
 // will be rate matched and follow at-least delivery semantics.
 type Subscription interface {
+	Pending() (int, int, error)
 	Unsubscribe() error
 }
 
@@ -301,6 +302,11 @@ func (sub *subscription) Unsubscribe() error {
 	}
 
 	return nil
+}
+
+// Pending returns the number of queued messages and queued bytes in the client for this subscription.
+func (s *subscription) Pending() (int, int, error) {
+	return s.inboxSub.Pending()
 }
 
 // Ack manually acknowledges a message.
