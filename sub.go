@@ -30,7 +30,15 @@ type Msg struct {
 // Subscription represents a subscription within the NATS Streaming cluster. Subscriptions
 // will be rate matched and follow at-least delivery semantics.
 type Subscription interface {
+	AutoUnsubscribe(max int) error
+	ClearMaxPending() error
+	Delivered() (int64, error)
+	Dropped() (int, error)
+	IsValid() bool
+	MaxPending() (int, int, error)
 	Pending() (int, int, error)
+	PendingLimits() (int, int, error)
+	SetPendingLimits(msgLimit, bytesLimit int) error
 	Unsubscribe() error
 }
 
@@ -244,6 +252,62 @@ func (sc *conn) subscribe(subject, qgroup string, cb MsgHandler, options ...Subs
 	return sub, nil
 }
 
+// AutoUnsubscribe will issue an automatic Unsubscribe that is
+// processed by the server when max messages have been received.
+// This can be useful when sending a request to an unknown number
+// of subscribers. Request() uses this functionality.
+func (sub *subscription) AutoUnsubscribe(max int) error {
+	return sub.inboxSub.AutoUnsubscribe(max)
+}
+
+// ClearMaxPending resets the maximums seen so far.
+func (sub *subscription) ClearMaxPending() error {
+	return sub.inboxSub.ClearMaxPending()
+}
+
+// Delivered returns the number of delivered messages for this subscription.
+func (sub *subscription) Delivered() (int64, error) {
+	return sub.inboxSub.Delivered()
+}
+
+// Dropped returns the number of known dropped messages for this subscription.
+// This will correspond to messages dropped by violations of PendingLimits. If
+// the server declares the connection a SlowConsumer, this number may not be
+// valid.
+func (sub *subscription) Dropped() (int, error) {
+	return sub.inboxSub.Dropped()
+}
+
+// IsValid returns a boolean indicating whether the subscription
+// is still active. This will return false if the subscription has
+// already been closed.
+func (sub *subscription) IsValid() bool {
+	return sub.inboxSub.IsValid()
+}
+
+// MaxPending returns the maximum number of queued messages and queued bytes seen so far.
+func (sub *subscription) MaxPending() (int, int, error) {
+	return sub.inboxSub.MaxPending()
+}
+
+// Pending returns the number of queued messages and queued bytes in the client for this subscription.
+func (sub *subscription) Pending() (int, int, error) {
+	return sub.inboxSub.Pending()
+}
+
+// PendingLimits returns the current limits for this subscription.
+// If no error is returned, a negative value indicates that the
+// given metric is not limited.
+func (sub *subscription) PendingLimits() (int, int, error) {
+	return sub.inboxSub.PendingLimits()
+}
+
+// SetPendingLimits sets the limits for pending msgs and bytes for this subscription.
+// Zero is not allowed. Any negative value means that the given metric is not limited.
+func (sub *subscription) SetPendingLimits(msgLimit, bytesLimit int) error {
+	return sub.inboxSub.SetPendingLimits(msgLimit, bytesLimit)
+}
+
 // Unsubscribe removes interest in the subscription
 func (sub *subscription) Unsubscribe() error {
 	if sub == nil {
@@ -302,11 +366,6 @@ func (sub *subscription) Unsubscribe() error {
 	}
 
 	return nil
-}
-
-// Pending returns the number of queued messages and queued bytes in the client for this subscription.
-func (s *subscription) Pending() (int, int, error) {
-	return s.inboxSub.Pending()
 }
 
 // Ack manually acknowledges a message.
