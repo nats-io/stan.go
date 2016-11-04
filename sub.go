@@ -224,7 +224,7 @@ func (sc *conn) subscribe(subject, qgroup string, cb MsgHandler, options ...Subs
 	}
 
 	b, _ := sr.Marshal()
-	reply, err := sc.nc.Request(sc.subRequests, b, 2*time.Second)
+	reply, err := sc.nc.Request(sc.subRequests, b, sc.opts.ConnectTimeout)
 	if err != nil {
 		sub.inboxSub.Unsubscribe()
 		return nil, err
@@ -287,8 +287,7 @@ func (sub *subscription) Unsubscribe() error {
 		Inbox:    sub.ackInbox,
 	}
 	b, _ := usr.Marshal()
-	// FIXME(dlc) - make timeout configurable.
-	reply, err := nc.Request(reqSubject, b, 2*time.Second)
+	reply, err := nc.Request(reqSubject, b, sc.opts.ConnectTimeout)
 	if err != nil {
 		return err
 	}
