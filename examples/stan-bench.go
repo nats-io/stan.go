@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"strings"
 	"sync"
 	"time"
 
@@ -35,7 +34,7 @@ func usage() {
 var benchmark *bench.Benchmark
 
 func main() {
-	var urls = flag.String("s", nats.DefaultURL, "The NATS server URLs (separated by comma)")
+	var url = flag.String("s", nats.DefaultURL, "The NATS server URL")
 	var tls = flag.Bool("tls", false, "Use TLS secure sonnection")
 	var numPubs = flag.Int("np", DefaultNumPubs, "Number of concurrent publishers")
 	var numSubs = flag.Int("ns", DefaultNumSubs, "Number of concurrent subscribers")
@@ -58,10 +57,7 @@ func main() {
 
 	// Setup the option block
 	opts := nats.DefaultOptions
-	opts.Servers = strings.Split(*urls, ",")
-	for i, s := range opts.Servers {
-		opts.Servers[i] = strings.Trim(s, " ")
-	}
+	opts.Url = *url
 	opts.Secure = *tls
 
 	benchmark = bench.NewBenchmark("NATS Streaming", *numSubs, *numPubs)
@@ -104,7 +100,7 @@ func main() {
 
 func runPublisher(startwg, donewg *sync.WaitGroup, opts nats.Options, numMsgs int, msgSize int, async bool, pubID string, maxPubAcksInflight int) {
 
-	snc, err := stan.Connect("test-cluster", pubID, stan.MaxPubAcksInflight(maxPubAcksInflight))
+	snc, err := stan.Connect("test-cluster", pubID, stan.MaxPubAcksInflight(maxPubAcksInflight), stan.NatsURL(opts.Url))
 	if err != nil {
 		log.Fatalf("Publisher %s can't connect: %v\n", pubID, err)
 	}
@@ -152,7 +148,7 @@ func runPublisher(startwg, donewg *sync.WaitGroup, opts nats.Options, numMsgs in
 }
 
 func runSubscriber(startwg, donewg *sync.WaitGroup, opts nats.Options, numMsgs int, msgSize int, ignoreOld bool, subID string) {
-	snc, err := stan.Connect("test-cluster", subID)
+	snc, err := stan.Connect("test-cluster", subID, stan.NatsURL(opts.Url))
 	if err != nil {
 		log.Fatalf("Subscriber %s can't connect: %v\n", subID, err)
 	}
