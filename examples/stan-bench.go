@@ -106,7 +106,7 @@ func main() {
 func runPublisher(startwg, donewg *sync.WaitGroup, opts nats.Options, numMsgs int, msgSize int, async bool, pubID string, maxPubAcksInflight int) {
 	nc, err := opts.Connect()
 	if err != nil {
-		log.Fatalf("Subscriber %s can't connect: %v\n", pubID, err)
+		log.Fatalf("Publisher %s can't connect: %v\n", pubID, err)
 	}
 	snc, err := stan.Connect("test-cluster", pubID, stan.MaxPubAcksInflight(maxPubAcksInflight), stan.NatsConn(nc))
 	if err != nil {
