@@ -7,13 +7,14 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/nats-io/go-nats-streaming"
 	"github.com/nats-io/nats"
 	"github.com/nats-io/nats/bench"
-	"strings"
+
 )
 
 // Some sane defaults
@@ -35,7 +36,7 @@ func usage() {
 var benchmark *bench.Benchmark
 
 func main() {
-	var urls = flag.String("s", nats.DefaultURL, "The NATS server URL")
+	var urls = flag.String("s", nats.DefaultURL, "The NATS server URLs (separated by comma")
 	var tls = flag.Bool("tls", false, "Use TLS secure sonnection")
 	var numPubs = flag.Int("np", DefaultNumPubs, "Number of concurrent publishers")
 	var numSubs = flag.Int("ns", DefaultNumSubs, "Number of concurrent subscribers")
