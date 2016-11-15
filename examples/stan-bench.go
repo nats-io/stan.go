@@ -152,6 +152,7 @@ func runPublisher(startwg, donewg *sync.WaitGroup, opts nats.Options, numMsgs in
 
 	benchmark.AddPubSample(bench.NewSample(numMsgs, msgSize, start, time.Now(), snc.NatsConn()))
 	snc.Close()
+	nc.Close()
 	donewg.Done()
 }
 
@@ -188,5 +189,6 @@ func runSubscriber(startwg, donewg *sync.WaitGroup, opts nats.Options, numMsgs i
 	<-ch
 	benchmark.AddSubSample(bench.NewSample(numMsgs, msgSize, start, time.Now(), snc.NatsConn()))
 	snc.Close()
+	nc.Close()
 	donewg.Done()
 }
