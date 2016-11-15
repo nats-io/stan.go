@@ -516,12 +516,6 @@ func TestSubscriptionStartAtSequence(t *testing.T) {
 		sc.Publish("foo", data)
 	}
 
-	// Check for illegal sequences
-	_, err := sc.Subscribe("foo", nil, StartAtSequence(500))
-	if err == nil {
-		t.Fatalf("Expected non-nil error on Subscribe")
-	}
-
 	ch := make(chan bool)
 	received := int32(0)
 	shouldReceive := int32(5)
@@ -592,12 +586,6 @@ func TestSubscriptionStartAtTime(t *testing.T) {
 	for i := 6; i <= 10; i++ {
 		data := []byte(fmt.Sprintf("%d", i))
 		sc.Publish("foo", data)
-	}
-
-	// Check for illegal configuration
-	_, err := sc.Subscribe("foo", nil, StartAtTime(time.Time{}))
-	if err == nil {
-		t.Fatalf("Expected non-nil error on Subscribe")
 	}
 
 	ch := make(chan bool)
@@ -678,28 +666,28 @@ func TestSubscriptionStartAtWithEmptyStore(t *testing.T) {
 	}
 
 	sub, err := sc.Subscribe("foo", mcb, StartAtTime(startTime))
-	if err == nil {
-		sub.Unsubscribe()
-		t.Fatalf("Expected error on Subscribe; did not receive one.")
-	}
-
-	sub, err = sc.Subscribe("foo", mcb, StartAtSequence(0))
-	if err == nil {
-		sub.Unsubscribe()
-		t.Fatalf("Expected error on Subscribe; did not recieve one.")
-	}
-
-	sub, err = sc.Subscribe("foo", mcb, StartWithLastReceived())
 	if err != nil {
-		t.Fatalf("Expected no error on Subscribe, got %v\n", err)
-	}
-
-	sub, err = sc.Subscribe("foo", mcb)
-	if err != nil {
-		t.Fatalf("Expected no error on Subscribe, got %v\n", err)
+		t.Fatalf("Unexpected error on subscribe: %v", err)
 	}
 	sub.Unsubscribe()
 
+	sub, err = sc.Subscribe("foo", mcb, StartAtSequence(0))
+	if err != nil {
+		t.Fatalf("Unexpected error on subscribe: %v", err)
+	}
+	sub.Unsubscribe()
+
+	sub, err = sc.Subscribe("foo", mcb, StartWithLastReceived())
+	if err != nil {
+		t.Fatalf("Unexpected error on subscribe: %v", err)
+	}
+	sub.Unsubscribe()
+
+	sub, err = sc.Subscribe("foo", mcb)
+	if err != nil {
+		t.Fatalf("Unexpected error on subscribe: %v", err)
+	}
+	sub.Unsubscribe()
 }
 
 func TestSubscriptionStartAtFirst(t *testing.T) {
