@@ -18,13 +18,12 @@ import (
 	"testing"
 	"time"
 
+	natsd "github.com/nats-io/gnatsd/test"
+	"github.com/nats-io/go-nats"
 	"github.com/nats-io/go-nats-streaming/pb"
-	"github.com/nats-io/nats"
+	natstest "github.com/nats-io/go-nats/test"
 	"github.com/nats-io/nats-streaming-server/server"
 	"github.com/nats-io/nats-streaming-server/test"
-	natstest "github.com/nats-io/nats/test"
-
-	natsd "github.com/nats-io/gnatsd/test"
 )
 
 func RunServer(ID string) *server.StanServer {
@@ -1245,7 +1244,7 @@ func TestDurableSubscriber(t *testing.T) {
 		if nr := atomic.AddInt32(&received, 1); nr == 10 {
 			// Reduce risk of test failure by allowing server to
 			// process acks before processing Close() requesting
-			time.Sleep(500 * time.Millisecond)
+			time.Sleep(time.Second)
 			sc.Close()
 			ch <- true
 		} else {
