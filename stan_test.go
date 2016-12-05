@@ -1054,51 +1054,6 @@ func TestRedelivery(t *testing.T) {
 	}
 }
 
-func TestRedeliveryHonorMaxInflight(t *testing.T) {
-	// Run a NATS Streaming server
-	s := RunServer(clusterName)
-	defer s.Shutdown()
-
-	sc := NewDefaultConnection(t)
-	defer sc.Close()
-
-	toSend := int32(100)
-	hw := []byte("Hello World")
-
-	for i := int32(0); i < toSend; i++ {
-		sc.Publish("foo", hw)
-	}
-
-	errCh := make(chan string)
-	received := int32(0)
-
-	ackRedeliverTime := 1 * time.Second
-
-	sub, err := sc.Subscribe("foo", func(m *Msg) {
-		if m.Redelivered {
-			errCh <- fmt.Sprintf("Message %d was redelivered", m.Sequence)
-			return
-		}
-		atomic.AddInt32(&received, 1)
-
-	}, DeliverAllAvailable(), MaxInflight(100), AckWait(ackRedeliverTime), SetManualAckMode())
-	if err != nil {
-		t.Fatalf("Unexpected error on Subscribe, got %v\n", err)
-	}
-	defer sub.Unsubscribe()
-
-	select {
-	case e := <-errCh:
-		t.Fatalf("%s", e)
-	case <-time.After(2 * time.Second):
-		// Wait for up to 2 seconds to see if messages are redelivered
-		break
-	}
-	if nr := atomic.LoadInt32(&received); nr != toSend {
-		t.Fatalf("Expected to get 100 messages, got %d\n", nr)
-	}
-}
-
 func checkTime(t *testing.T, label string, time1, time2 time.Time, expected time.Duration, tolerance time.Duration) {
 	duration := time2.Sub(time1)
 
