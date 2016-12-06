@@ -1882,7 +1882,13 @@ func TestNatsURLOption(t *testing.T) {
 }
 
 func TestTimeoutOnRequests(t *testing.T) {
-	s := RunServer(clusterName)
+	ns := natsd.RunDefaultServer()
+	defer ns.Shutdown()
+
+	opts := server.GetDefaultOptions()
+	opts.ID = clusterName
+	opts.NATSServerURL = nats.DefaultURL
+	s := server.RunServerWithOpts(opts, nil)
 	defer s.Shutdown()
 
 	sc := NewDefaultConnection(t)
