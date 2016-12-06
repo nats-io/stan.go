@@ -104,17 +104,6 @@ message UnsubscribeRequest {
   string durableName = 4; // Optional durable name which survives client restarts
 }
 
-// Protocol for a client to close a subscription without unsubscribing.
-// For non-durables, this would be equivalent to UnsubscribeRequest,
-// however, for durables, this allow the server to remove the subscriber
-// but keep the durable interest.
-// Will return a SubscriptionResponse
-message SubscriptionCloseRequest {
-  string clientID    = 1; // ClientID
-  string subject     = 2; // Subject for the subscription
-  string inbox       = 3; // Inbox subject to identify the subscription
-}
-
 // Protocol for a client to close a connection
 message CloseRequest {
   string clientID = 1;  // Client name provided to Connect() requests
