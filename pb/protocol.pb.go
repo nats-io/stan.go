@@ -127,12 +127,13 @@ func (*ConnectRequest) ProtoMessage()    {}
 
 // Response to a client connect
 type ConnectResponse struct {
-	PubPrefix     string `protobuf:"bytes,1,opt,name=pubPrefix,proto3" json:"pubPrefix,omitempty"`
-	SubRequests   string `protobuf:"bytes,2,opt,name=subRequests,proto3" json:"subRequests,omitempty"`
-	UnsubRequests string `protobuf:"bytes,3,opt,name=unsubRequests,proto3" json:"unsubRequests,omitempty"`
-	CloseRequests string `protobuf:"bytes,4,opt,name=closeRequests,proto3" json:"closeRequests,omitempty"`
-	Error         string `protobuf:"bytes,5,opt,name=error,proto3" json:"error,omitempty"`
-	PublicKey     string `protobuf:"bytes,100,opt,name=publicKey,proto3" json:"publicKey,omitempty"`
+	PubPrefix        string `protobuf:"bytes,1,opt,name=pubPrefix,proto3" json:"pubPrefix,omitempty"`
+	SubRequests      string `protobuf:"bytes,2,opt,name=subRequests,proto3" json:"subRequests,omitempty"`
+	UnsubRequests    string `protobuf:"bytes,3,opt,name=unsubRequests,proto3" json:"unsubRequests,omitempty"`
+	CloseRequests    string `protobuf:"bytes,4,opt,name=closeRequests,proto3" json:"closeRequests,omitempty"`
+	Error            string `protobuf:"bytes,5,opt,name=error,proto3" json:"error,omitempty"`
+	SubCloseRequests string `protobuf:"bytes,6,opt,name=subCloseRequests,proto3" json:"subCloseRequests,omitempty"`
+	PublicKey        string `protobuf:"bytes,100,opt,name=publicKey,proto3" json:"publicKey,omitempty"`
 }
 
 func (m *ConnectResponse) Reset()         { *m = ConnectResponse{} }
@@ -465,6 +466,12 @@ func (m *ConnectResponse) MarshalTo(data []byte) (int, error) {
 		i++
 		i = encodeVarintProtocol(data, i, uint64(len(m.Error)))
 		i += copy(data[i:], m.Error)
+	}
+	if len(m.SubCloseRequests) > 0 {
+		data[i] = 0x32
+		i++
+		i = encodeVarintProtocol(data, i, uint64(len(m.SubCloseRequests)))
+		i += copy(data[i:], m.SubCloseRequests)
 	}
 	if len(m.PublicKey) > 0 {
 		data[i] = 0xa2
@@ -824,6 +831,10 @@ func (m *ConnectResponse) Size() (n int) {
 		n += 1 + l + sovProtocol(uint64(l))
 	}
 	l = len(m.Error)
+	if l > 0 {
+		n += 1 + l + sovProtocol(uint64(l))
+	}
+	l = len(m.SubCloseRequests)
 	if l > 0 {
 		n += 1 + l + sovProtocol(uint64(l))
 	}
@@ -1875,6 +1886,35 @@ func (m *ConnectResponse) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.Error = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SubCloseRequests", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowProtocol
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthProtocol
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.SubCloseRequests = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 100:
 			if wireType != 2 {

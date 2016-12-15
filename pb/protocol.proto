@@ -57,11 +57,12 @@ message ConnectRequest {
 
 // Response to a client connect
 message ConnectResponse {
-  string pubPrefix     = 1;   // Prefix to use when publishing to this STAN cluster
-  string subRequests   = 2;   // Subject to use for subscription requests
-  string unsubRequests = 3;   // Subject to use for unsubscribe requests
-  string closeRequests = 4;   // Subject for closing the stan connection
-  string error         = 5;   // err string, empty/omitted if no error
+  string pubPrefix        = 1;   // Prefix to use when publishing to this STAN cluster
+  string subRequests      = 2;   // Subject to use for subscription requests
+  string unsubRequests    = 3;   // Subject to use for unsubscribe requests
+  string closeRequests    = 4;   // Subject for closing the stan connection
+  string error            = 5;   // err string, empty/omitted if no error
+  string subCloseRequests = 6;   // Subject to use for subscription close requests
 
   string publicKey     = 100; // Possibly used to sign acks, etc.
 }
