@@ -1881,6 +1881,89 @@ func TestNatsURLOption(t *testing.T) {
 	}
 }
 
+func TestSubscriptionPending(t *testing.T) {
+	// Run a NATS Streaming server
+	s := RunServer(clusterName)
+	defer s.Shutdown()
+
+	sc := NewDefaultConnection(t)
+	defer sc.Close()
+
+	nc := sc.NatsConn()
+
+	total := 100
+	msg := []byte("0123456789")
+
+	inCb := make(chan bool)
+	block := make(chan bool)
+	cb := func(m *Msg) {
+		inCb <- true
+		<-block
+	}
+
+	sub, _ := sc.QueueSubscribe("foo", "bar", cb)
+	defer sub.Unsubscribe()
+
+	// Publish five messages
+	for i := 0; i < total; i++ {
+		sc.Publish("foo", msg)
+	}
+	nc.Flush()
+
+	// Wait for our first message
+	if err := Wait(inCb); err != nil {
+		t.Fatal("No message received")
+	}
+
+	m, b, _ := sub.Pending()
+	// FIXME(jack0) - nats streaming appends clientid, guid, and subject to messages so bytes pending is greater than message size
+	mlen := len(msg) + 19
+	totalSize := total * mlen
+
+	if m != total && m != total-1 {
+		t.Fatalf("Expected msgs of %d or %d, got %d\n", total, total-1, m)
+	}
+	if b != totalSize && b != totalSize-mlen {
+		t.Fatalf("Expected bytes of %d or %d, got %d\n",
+			totalSize, totalSize-mlen, b)
+	}
+
+	// Make sure max has been set. Since we block after the first message is
+	// received, MaxPending should be >= total - 1 and <= total
+	mm, bm, _ := sub.MaxPending()
+	if mm < total-1 || mm > total {
+		t.Fatalf("Expected max msgs (%d) to be between %d and %d\n",
+			mm, total-1, total)
+	}
+	if bm < totalSize-mlen || bm > totalSize {
+		t.Fatalf("Expected max bytes (%d) to be between %d and %d\n",
+			bm, totalSize, totalSize-mlen)
+	}
+	// Check that clear works.
+	sub.ClearMaxPending()
+	mm, bm, _ = sub.MaxPending()
+	if mm != 0 {
+		t.Fatalf("Expected max msgs to be 0 vs %d after clearing\n", mm)
+	}
+	if bm != 0 {
+		t.Fatalf("Expected max bytes to be 0 vs %d after clearing\n", bm)
+	}
+
+	close(block)
+	sub.Unsubscribe()
+
+	// These calls should fail once the subscription is closed.
+	if _, _, err := sub.Pending(); err == nil {
+		t.Fatal("Calling Pending() on closed subscription should fail")
+	}
+	if _, _, err := sub.MaxPending(); err == nil {
+		t.Fatal("Calling MaxPending() on closed subscription should fail")
+	}
+	if err := sub.ClearMaxPending(); err == nil {
+		t.Fatal("Calling ClearMaxPending() on closed subscription should fail")
+	}
+}
+
 func TestTimeoutOnRequests(t *testing.T) {
 	ns := natsd.RunDefaultServer()
 	defer ns.Shutdown()
@@ -1936,6 +2019,68 @@ func TestTimeoutOnRequests(t *testing.T) {
 	if err := sc.Close(); err != ErrCloseReqTimeout {
 		t.Fatalf("Expected %v error, got %v", ErrCloseReqTimeout, err)
 	}
+}
+
+func TestSlowAsyncSubscriber(t *testing.T) {
+	// Run a NATS Streaming server
+	s := RunServer(clusterName)
+	defer s.Shutdown()
+
+	sc := NewDefaultConnection(t)
+	defer sc.Close()
+
+	nc := sc.NatsConn()
+
+	bch := make(chan bool)
+
+	sub, _ := sc.Subscribe("foo", func(_ *Msg) {
+		// block to back us up..
+		<-bch
+	})
+	// Make sure these are the defaults
+	pm, pb, _ := sub.PendingLimits()
+	if pm != nats.DefaultSubPendingMsgsLimit {
+		t.Fatalf("Pending limit for number of msgs incorrect, expected %d, got %d\n", nats.DefaultSubPendingMsgsLimit, pm)
+	}
+	if pb != nats.DefaultSubPendingBytesLimit {
+		t.Fatalf("Pending limit for number of bytes incorrect, expected %d, got %d\n", nats.DefaultSubPendingBytesLimit, pb)
+	}
+
+	// Set new limits
+	pml := 100
+	pbl := 1024 * 1024
+
+	sub.SetPendingLimits(pml, pbl)
+
+	// Make sure the set is correct
+	pm, pb, _ = sub.PendingLimits()
+	if pm != pml {
+		t.Fatalf("Pending limit for number of msgs incorrect, expected %d, got %d\n", pml, pm)
+	}
+	if pb != pbl {
+		t.Fatalf("Pending limit for number of bytes incorrect, expected %d, got %d\n", pbl, pb)
+	}
+
+	for i := 0; i < (int(pml) + 100); i++ {
+		sc.Publish("foo", []byte("Hello"))
+	}
+
+	timeout := 5 * time.Second
+	start := time.Now()
+	err := nc.FlushTimeout(timeout)
+	elapsed := time.Since(start)
+	if elapsed >= timeout {
+		t.Fatalf("Flush did not return before timeout")
+	}
+	// We want flush to work, so expect no error for it.
+	if err != nil {
+		t.Fatalf("Expected no error from Flush()\n")
+	}
+	if nc.LastError() != nats.ErrSlowConsumer {
+		t.Fatal("Expected LastError to indicate slow consumer")
+	}
+	// release the sub
+	bch <- true
 }
 
 func TestSubscriberClose(t *testing.T) {
