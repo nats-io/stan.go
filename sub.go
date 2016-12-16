@@ -268,22 +268,20 @@ func (sc *conn) subscribe(subject, qgroup string, cb MsgHandler, options ...Subs
 func (sub *subscription) ClearMaxPending() error {
 	sub.Lock()
 	defer sub.Unlock()
-	inbox := sub.inboxSub
-	if inbox == nil {
+	if sub.inboxSub == nil {
 		return ErrBadSubscription
 	}
-	return inbox.ClearMaxPending()
+	return sub.inboxSub.ClearMaxPending()
 }
 
 // Delivered returns the number of delivered messages for this subscription.
 func (sub *subscription) Delivered() (int64, error) {
 	sub.Lock()
 	defer sub.Unlock()
-	inbox := sub.inboxSub
-	if inbox == nil {
+	if sub.inboxSub == nil {
 		return -1, ErrBadSubscription
 	}
-	return inbox.Delivered()
+	return sub.inboxSub.Delivered()
 }
 
 // Dropped returns the number of known dropped messages for this subscription.
@@ -293,11 +291,10 @@ func (sub *subscription) Delivered() (int64, error) {
 func (sub *subscription) Dropped() (int, error) {
 	sub.Lock()
 	defer sub.Unlock()
-	inbox := sub.inboxSub
-	if inbox == nil {
+	if sub.inboxSub == nil {
 		return -1, ErrBadSubscription
 	}
-	return inbox.Dropped()
+	return sub.inboxSub.Dropped()
 }
 
 // IsValid returns a boolean indicating whether the subscription
@@ -306,33 +303,30 @@ func (sub *subscription) Dropped() (int, error) {
 func (sub *subscription) IsValid() bool {
 	sub.Lock()
 	defer sub.Unlock()
-	inbox := sub.inboxSub
-	if inbox == nil {
+	if sub.inboxSub == nil {
 		return false
 	}
-	return inbox.IsValid()
+	return sub.inboxSub.IsValid()
 }
 
 // MaxPending returns the maximum number of queued messages and queued bytes seen so far.
 func (sub *subscription) MaxPending() (int, int, error) {
 	sub.Lock()
 	defer sub.Unlock()
-	inbox := sub.inboxSub
-	if inbox == nil {
+	if sub.inboxSub == nil {
 		return -1, -1, ErrBadSubscription
 	}
-	return inbox.MaxPending()
+	return sub.inboxSub.MaxPending()
 }
 
 // Pending returns the number of queued messages and queued bytes in the client for this subscription.
 func (sub *subscription) Pending() (int, int, error) {
 	sub.Lock()
 	defer sub.Unlock()
-	inbox := sub.inboxSub
-	if inbox == nil {
+	if sub.inboxSub == nil {
 		return -1, -1, ErrBadSubscription
 	}
-	return inbox.Pending()
+	return sub.inboxSub.Pending()
 }
 
 // PendingLimits returns the current limits for this subscription.
@@ -341,11 +335,10 @@ func (sub *subscription) Pending() (int, int, error) {
 func (sub *subscription) PendingLimits() (int, int, error) {
 	sub.Lock()
 	defer sub.Unlock()
-	inbox := sub.inboxSub
-	if inbox == nil {
+	if sub.inboxSub == nil {
 		return -1, -1, ErrBadSubscription
 	}
-	return inbox.PendingLimits()
+	return sub.inboxSub.PendingLimits()
 }
 
 // SetPendingLimits sets the limits for pending msgs and bytes for this subscription.
@@ -353,11 +346,10 @@ func (sub *subscription) PendingLimits() (int, int, error) {
 func (sub *subscription) SetPendingLimits(msgLimit, bytesLimit int) error {
 	sub.Lock()
 	defer sub.Unlock()
-	inbox := sub.inboxSub
-	if inbox == nil {
+	if sub.inboxSub == nil {
 		return ErrBadSubscription
 	}
-	return inbox.SetPendingLimits(msgLimit, bytesLimit)
+	return sub.inboxSub.SetPendingLimits(msgLimit, bytesLimit)
 }
 
 // closeOrUnsubscribe performs either close or unsubsribe based on
