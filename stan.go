@@ -181,7 +181,7 @@ func Connect(stanClusterID, clientID string, options ...Option) (Conn, error) {
 	c.nc = c.opts.NatsConn
 	// Create a NATS connection if it doesn't exist.
 	if c.nc == nil {
-		nc, err := nats.Connect(c.opts.NatsURL)
+		nc, err := nats.Connect(c.opts.NatsURL, nats.Name(clientID))
 		if err != nil {
 			return nil, err
 		}
