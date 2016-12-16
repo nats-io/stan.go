@@ -1976,6 +1976,20 @@ func TestSubscriberClose(t *testing.T) {
 	closeSubscriber(t, "durqueuesub", "queue")
 }
 
+func TestOptionNatsName(t *testing.T) {
+	s := RunServer(clusterName)
+	defer s.Shutdown()
+	sc := NewDefaultConnection(t)
+	defer sc.Close()
+
+	// Make sure we can get the STAN-created Conn.
+	nc := sc.NatsConn()
+
+	if n := nc.Opts.Name; n != clientName {
+		t.Fatalf("Unexpected nats client name: %s", n)
+	}
+}
+
 func closeSubscriber(t *testing.T, channel, subType string) {
 	sc := NewDefaultConnection(t)
 	defer sc.Close()
