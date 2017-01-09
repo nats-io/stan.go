@@ -395,11 +395,16 @@ func (sc *conn) publishAsync(subject string, data []byte, ah AckHandler, ch chan
 	// Setup the timer for expiration.
 	sc.Lock()
 	a.t = time.AfterFunc(ackTimeout, func() {
-		sc.removeAck(peGUID)
-		if a.ah != nil {
-			ah(peGUID, ErrTimeout)
+		pubAck := sc.removeAck(peGUID)
+		// processAck could get here before and handle the ack.
+		// If that's the case, we would get nil here and simply return.
+		if pubAck == nil {
+			return
+		}
+		if pubAck.ah != nil {
+			pubAck.ah(peGUID, ErrTimeout)
 		} else if a.ch != nil {
-			a.ch <- ErrTimeout
+			pubAck.ch <- ErrTimeout
 		}
 	})
 	sc.Unlock()
