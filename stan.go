@@ -253,10 +253,6 @@ func Connect(stanClusterID, clientID string, options ...Option) (Conn, error) {
 
 // Close a connection to the stan system.
 func (sc *conn) Close() error {
-	if sc == nil {
-		return ErrBadConnection
-	}
-
 	sc.Lock()
 	defer sc.Unlock()
 
@@ -322,9 +318,7 @@ func (sc *conn) processAck(m *nats.Msg) {
 	pa := &pb.PubAck{}
 	err := pa.Unmarshal(m.Data)
 	if err != nil {
-		// FIXME, make closure to have context?
-		fmt.Printf("Error processing unmarshal\n")
-		return
+		panic(fmt.Errorf("Error during ack unmarshal: %v", err))
 	}
 
 	// Remove
@@ -441,7 +435,7 @@ func (sc *conn) processMsg(raw *nats.Msg) {
 	msg := &Msg{}
 	err := msg.Unmarshal(raw.Data)
 	if err != nil {
-		panic("Error processing unmarshal for msg")
+		panic(fmt.Errorf("Error processing unmarshal for msg: %v", err))
 	}
 	// Lookup the subscription
 	sc.RLock()
