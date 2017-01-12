@@ -17,9 +17,6 @@ NATS Streaming provides the following high-level feature set:
 
 - Please raise questions/issues via the [Issue Tracker](https://github.com/nats-io/go-nats-streaming/issues).
 
-## Known Issues
-- Time- and sequence-based subscriptions are exact. Requesting a time or seqno before the earliest stored message for a subject will result in an error (in SubscriptionRequest.Error)
-
 ## Installation
 
 ```bash
