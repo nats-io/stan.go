@@ -355,9 +355,6 @@ func (sub *subscription) SetPendingLimits(msgLimit, bytesLimit int) error {
 // closeOrUnsubscribe performs either close or unsubsribe based on
 // given boolean.
 func (sub *subscription) closeOrUnsubscribe(doClose bool) error {
-	if sub == nil {
-		return ErrBadSubscription
-	}
 	sub.Lock()
 	sc := sub.sc
 	if sc == nil {
@@ -369,10 +366,6 @@ func (sub *subscription) closeOrUnsubscribe(doClose bool) error {
 	sub.inboxSub.Unsubscribe()
 	sub.inboxSub = nil
 	sub.Unlock()
-
-	if sc == nil {
-		return ErrBadSubscription
-	}
 
 	sc.Lock()
 	if sc.nc == nil {
@@ -438,12 +431,8 @@ func (msg *Msg) Ack() error {
 	if msg == nil {
 		return ErrNilMsg
 	}
-	// Look up subscription
+	// Look up subscription (cannot be nil)
 	sub := msg.Sub.(*subscription)
-	if sub == nil {
-		return ErrBadSubscription
-	}
-
 	sub.RLock()
 	ackSubject := sub.ackInbox
 	isManualAck := sub.opts.ManualAcks
@@ -451,6 +440,9 @@ func (msg *Msg) Ack() error {
 	sub.RUnlock()
 
 	// Check for error conditions.
+	if !isManualAck {
+		return ErrManualAck
+	}
 	if sc == nil {
 		return ErrBadSubscription
 	}
@@ -460,9 +452,6 @@ func (msg *Msg) Ack() error {
 	sc.RUnlock()
 	if nc == nil {
 		return ErrBadConnection
-	}
-	if !isManualAck {
-		return ErrManualAck
 	}
 
 	// Ack here.
