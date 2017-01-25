@@ -83,7 +83,7 @@ func stackFatalf(t tLogger, f string, args ...interface{}) {
 	// Generate the Stack of callers:
 	for i := 1; true; i++ {
 		_, file, line, ok := runtime.Caller(i)
-		if ok == false {
+		if !ok {
 			break
 		}
 		msg := fmt.Sprintf("%d - %s:%d", i, file, line)
@@ -677,7 +677,7 @@ func TestSubscriptionStartAtTime(t *testing.T) {
 	}
 
 	// Now test Ago helper
-	delta := time.Now().Sub(startTime)
+	delta := time.Since(startTime)
 
 	sub, err = sc.Subscribe("foo", mcb, StartAtTimeDelta(delta))
 	if err != nil {
