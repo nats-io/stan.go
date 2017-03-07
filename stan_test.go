@@ -1355,7 +1355,7 @@ func TestMaxChannels(t *testing.T) {
 	opts.MaxChannels = 10
 
 	// Run a NATS Streaming server
-	s := server.RunServerWithOpts(opts, nil)
+	s := test.RunServerWithOpts(opts, nil)
 	defer s.Shutdown()
 
 	sc := NewDefaultConnection(t)
@@ -1611,7 +1611,7 @@ func TestTimeoutOnRequests(t *testing.T) {
 	opts := server.GetDefaultOptions()
 	opts.ID = clusterName
 	opts.NATSServerURL = nats.DefaultURL
-	s := server.RunServerWithOpts(opts, nil)
+	s := test.RunServerWithOpts(opts, nil)
 	defer s.Shutdown()
 
 	sc := NewDefaultConnection(t)
