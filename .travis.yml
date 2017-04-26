@@ -1,8 +1,8 @@
 language: go
 sudo: false
 go:
-- 1.6.4
-- 1.7.4
+- 1.7.5
+- 1.8.1
 install:
 - go get -t ./...
 - go get github.com/nats-io/nats-streaming-server
@@ -10,11 +10,13 @@ install:
 - go get github.com/wadey/gocovmerge
 - go get honnef.co/go/tools/cmd/staticcheck
 - go get honnef.co/go/tools/cmd/gosimple
+- go get -u github.com/client9/misspell/cmd/misspell
 before_script:
 - go fmt ./...
 - go vet ./...
 - gosimple ./...
 - staticcheck ./...
+- misspell -error -locale US .
 script:
 - go test -i -race ./...
 - go test -v -race ./...

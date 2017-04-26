@@ -1371,7 +1371,7 @@ func TestMaxChannels(t *testing.T) {
 	}
 	// This one should error
 	if err := sc.Publish("CHAN_MAX", hw); err == nil {
-		t.Fatalf("Expected an error signalling too many channels\n")
+		t.Fatalf("Expected an error signaling too many channels\n")
 	}
 }
 
