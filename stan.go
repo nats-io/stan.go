@@ -169,6 +169,7 @@ type ack struct {
 }
 
 // Connect will form a connection to the NATS Streaming subsystem.
+// Note that clientID can contain only alphanumeric and `-` or `_` characters.
 func Connect(stanClusterID, clientID string, options ...Option) (Conn, error) {
 	// Process Options
 	c := conn{clientID: clientID, opts: DefaultOptions}
