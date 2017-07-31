@@ -1437,13 +1437,13 @@ func TestNatsConn(t *testing.T) {
 	}
 
 	// Bail if we have a custom connection but not connected
-	cnc := nats.Conn{Opts: nats.DefaultOptions}
+	cnc := nats.Conn{Opts: nats.GetDefaultOptions()}
 	if _, err := Connect(clusterName, clientName, NatsConn(&cnc)); err != ErrBadConnection {
 		t.Fatalf("Expected to get an invalid connection error, got %v", err)
 	}
 
 	// Allow custom conn only if already connected
-	opts := nats.DefaultOptions
+	opts := nats.GetDefaultOptions()
 	nc, err := opts.Connect()
 	if err != nil {
 		t.Fatalf("Expected to connect correctly, got err %v", err)
