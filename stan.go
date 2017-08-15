@@ -144,7 +144,6 @@ func NatsConn(nc *nats.Conn) Option {
 type conn struct {
 	sync.RWMutex
 	clientID         string
-	serverID         string
 	pubPrefix        string // Publish prefix set by stan, append our subject.
 	subRequests      string // Subject to send subscription requests.
 	unsubRequests    string // Subject to send unsubscribe requests.
