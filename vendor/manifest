@@ -1,0 +1,192 @@
+{
+	"version": 0,
+	"dependencies": [
+		{
+			"importpath": "github.com/gogo/protobuf/gogoproto",
+			"repository": "https://github.com/gogo/protobuf",
+			"vcs": "git",
+			"revision": "fcdc5011193ff531a548e9b0301828d5a5b97fd8",
+			"branch": "master",
+			"path": "/gogoproto",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/gogo/protobuf/proto",
+			"repository": "https://github.com/gogo/protobuf",
+			"vcs": "git",
+			"revision": "fcdc5011193ff531a548e9b0301828d5a5b97fd8",
+			"branch": "master",
+			"path": "proto",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/gogo/protobuf/protoc-gen-gogo/descriptor",
+			"repository": "https://github.com/gogo/protobuf",
+			"vcs": "git",
+			"revision": "fcdc5011193ff531a548e9b0301828d5a5b97fd8",
+			"branch": "master",
+			"path": "protoc-gen-gogo/descriptor",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/gogo/protobuf/sortkeys",
+			"repository": "https://github.com/gogo/protobuf",
+			"vcs": "git",
+			"revision": "fcdc5011193ff531a548e9b0301828d5a5b97fd8",
+			"branch": "master",
+			"path": "sortkeys",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/gogo/protobuf/types",
+			"repository": "https://github.com/gogo/protobuf",
+			"vcs": "git",
+			"revision": "fcdc5011193ff531a548e9b0301828d5a5b97fd8",
+			"branch": "master",
+			"path": "types",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/golang/protobuf/proto",
+			"repository": "https://github.com/golang/protobuf",
+			"vcs": "git",
+			"revision": "1909bc2f63dc92bb931deace8b8312c4db72d12f",
+			"branch": "master",
+			"path": "/proto",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/golang/protobuf/ptypes/any",
+			"repository": "https://github.com/golang/protobuf",
+			"vcs": "git",
+			"revision": "1909bc2f63dc92bb931deace8b8312c4db72d12f",
+			"branch": "master",
+			"path": "ptypes/any",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/nats-io/gnatsd/conf",
+			"repository": "https://github.com/nats-io/gnatsd",
+			"vcs": "git",
+			"revision": "0497d592798273ff7a50256ee563aa7d45b75272",
+			"branch": "master",
+			"path": "conf",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/nats-io/gnatsd/logger",
+			"repository": "https://github.com/nats-io/gnatsd",
+			"vcs": "git",
+			"revision": "0497d592798273ff7a50256ee563aa7d45b75272",
+			"branch": "master",
+			"path": "logger",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/nats-io/gnatsd/server",
+			"repository": "https://github.com/nats-io/gnatsd",
+			"vcs": "git",
+			"revision": "0497d592798273ff7a50256ee563aa7d45b75272",
+			"branch": "master",
+			"path": "server",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/nats-io/gnatsd/test",
+			"repository": "https://github.com/nats-io/gnatsd",
+			"vcs": "git",
+			"revision": "0497d592798273ff7a50256ee563aa7d45b75272",
+			"branch": "master",
+			"path": "/test",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/nats-io/gnatsd/util",
+			"repository": "https://github.com/nats-io/gnatsd",
+			"vcs": "git",
+			"revision": "0497d592798273ff7a50256ee563aa7d45b75272",
+			"branch": "master",
+			"path": "util",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/nats-io/gnatsd/vendor/github.com/nats-io/nuid",
+			"repository": "https://github.com/nats-io/gnatsd",
+			"vcs": "git",
+			"revision": "0497d592798273ff7a50256ee563aa7d45b75272",
+			"branch": "master",
+			"path": "vendor/github.com/nats-io/nuid",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/nats-io/gnatsd/vendor/golang.org/x/crypto/bcrypt",
+			"repository": "https://github.com/nats-io/gnatsd",
+			"vcs": "git",
+			"revision": "0497d592798273ff7a50256ee563aa7d45b75272",
+			"branch": "master",
+			"path": "vendor/golang.org/x/crypto/bcrypt",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/nats-io/gnatsd/vendor/golang.org/x/crypto/blowfish",
+			"repository": "https://github.com/nats-io/gnatsd",
+			"vcs": "git",
+			"revision": "0497d592798273ff7a50256ee563aa7d45b75272",
+			"branch": "master",
+			"path": "vendor/golang.org/x/crypto/blowfish",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/nats-io/gnatsd/vendor/golang.org/x/sys/windows",
+			"repository": "https://github.com/nats-io/gnatsd",
+			"vcs": "git",
+			"revision": "0497d592798273ff7a50256ee563aa7d45b75272",
+			"branch": "master",
+			"path": "vendor/golang.org/x/sys/windows",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/nats-io/go-nats",
+			"repository": "https://github.com/nats-io/go-nats",
+			"vcs": "git",
+			"revision": "b4479c874d87db74c2049a1b4abd55eb162c70fb",
+			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/nats-io/nuid",
+			"repository": "https://github.com/nats-io/nuid",
+			"vcs": "git",
+			"revision": "3cf34f9fca4e88afa9da8eabd75e3326c9941b44",
+			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "golang.org/x/crypto/ssh/terminal",
+			"repository": "https://go.googlesource.com/crypto",
+			"vcs": "git",
+			"revision": "b176d7def5d71bdd214203491f89843ed217f420",
+			"branch": "master",
+			"path": "/ssh/terminal",
+			"notests": true
+		},
+		{
+			"importpath": "golang.org/x/sys/unix",
+			"repository": "https://go.googlesource.com/sys",
+			"vcs": "git",
+			"revision": "9f7170bcd8e9f4d3691c06401119c46a769a1e03",
+			"branch": "master",
+			"path": "unix",
+			"notests": true
+		},
+		{
+			"importpath": "golang.org/x/sys/windows",
+			"repository": "https://go.googlesource.com/sys",
+			"vcs": "git",
+			"revision": "9f7170bcd8e9f4d3691c06401119c46a769a1e03",
+			"branch": "master",
+			"path": "/windows",
+			"notests": true
+		}
+	]
+}

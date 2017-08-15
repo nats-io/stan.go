@@ -11,13 +11,14 @@ install:
 - go get honnef.co/go/tools/cmd/staticcheck
 - go get honnef.co/go/tools/cmd/gosimple
 before_script:
-- go fmt ./...
-- go vet ./...
-- gosimple ./...
-- staticcheck ./...
+- EXCLUDE_VENDOR=$(go list ./... | grep -v "/vendor/")
+- go fmt $EXCLUDE_VENDOR
+- go vet $EXCLUDE_VENDOR
+- gosimple $EXCLUDE_VENDOR
+- staticcheck $EXCLUDE_VENDOR
 script:
-- go test -i -race ./...
-- go test -v -race ./...
+- go test -i -race $EXCLUDE_VENDOR
+- go test -v -race $EXCLUDE_VENDOR
 after_success:
 - if [[ "$TRAVIS_GO_VERSION" == 1.7.* ]]; then ./scripts/cov.sh TRAVIS; fi
 env:
