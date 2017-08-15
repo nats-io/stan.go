@@ -1371,7 +1371,7 @@ func TestMaxChannels(t *testing.T) {
 	}
 	// This one should error
 	if err := sc.Publish("CHAN_MAX", hw); err == nil {
-		t.Fatalf("Expected an error signalling too many channels\n")
+		t.Fatalf("Expected an error signaling too many channels\n")
 	}
 }
 
@@ -1437,13 +1437,13 @@ func TestNatsConn(t *testing.T) {
 	}
 
 	// Bail if we have a custom connection but not connected
-	cnc := nats.Conn{Opts: nats.DefaultOptions}
+	cnc := nats.Conn{Opts: nats.GetDefaultOptions()}
 	if _, err := Connect(clusterName, clientName, NatsConn(&cnc)); err != ErrBadConnection {
 		t.Fatalf("Expected to get an invalid connection error, got %v", err)
 	}
 
 	// Allow custom conn only if already connected
-	opts := nats.DefaultOptions
+	opts := nats.GetDefaultOptions()
 	nc, err := opts.Connect()
 	if err != nil {
 		t.Fatalf("Expected to connect correctly, got err %v", err)
