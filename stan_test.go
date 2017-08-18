@@ -1463,6 +1463,7 @@ func TestNatsConn(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Expected to connect correctly, got err %v", err)
 	}
+	defer nc.Close()
 	sc, err = Connect(clusterName, clientName, NatsConn(nc))
 	if err != nil {
 		t.Fatalf("Expected to connect correctly, got err %v", err)
@@ -1471,7 +1472,6 @@ func TestNatsConn(t *testing.T) {
 	if sc.NatsConn() != nc {
 		t.Fatal("Unexpected wrapped conn")
 	}
-	nc.Close()
 }
 
 func TestMaxPubAcksInflight(t *testing.T) {
