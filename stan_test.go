@@ -20,7 +20,6 @@ import (
 	natsd "github.com/nats-io/gnatsd/test"
 	"github.com/nats-io/go-nats"
 	"github.com/nats-io/go-nats-streaming/pb"
-	natstest "github.com/nats-io/go-nats/test"
 	"github.com/nats-io/nats-streaming-server/server"
 	"github.com/nats-io/nats-streaming-server/test"
 )
@@ -1459,7 +1458,11 @@ func TestNatsConn(t *testing.T) {
 	sc.Close()
 
 	// Make sure we can get the Conn we provide.
-	nc = natstest.NewDefaultConnection(t)
+	opts = nats.GetDefaultOptions()
+	nc, err = opts.Connect()
+	if err != nil {
+		t.Fatalf("Expected to connect correctly, got err %v", err)
+	}
 	sc, err = Connect(clusterName, clientName, NatsConn(nc))
 	if err != nil {
 		t.Fatalf("Expected to connect correctly, got err %v", err)
@@ -1468,6 +1471,7 @@ func TestNatsConn(t *testing.T) {
 	if sc.NatsConn() != nc {
 		t.Fatal("Unexpected wrapped conn")
 	}
+	nc.Close()
 }
 
 func TestMaxPubAcksInflight(t *testing.T) {
