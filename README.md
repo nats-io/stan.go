@@ -326,7 +326,7 @@ sc.Subscribe("foo", func(m *stan.Msg) {
 
 (The MIT License)
 
-Copyright (c) 2012-2016 Apcera Inc.
+Copyright (c) 2016-2017 Apcera Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to
