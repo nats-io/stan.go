@@ -21,11 +21,22 @@ import (
 	"github.com/nats-io/go-nats"
 	"github.com/nats-io/go-nats-streaming/pb"
 	"github.com/nats-io/nats-streaming-server/server"
-	"github.com/nats-io/nats-streaming-server/test"
 )
 
 func RunServer(ID string) *server.StanServer {
-	return test.RunServer(ID)
+	s, err := server.RunServer(ID)
+	if err != nil {
+		panic(err)
+	}
+	return s
+}
+
+func runServerWithOpts(sOpts *server.Options) *server.StanServer {
+	s, err := server.RunServerWithOpts(sOpts, nil)
+	if err != nil {
+		panic(err)
+	}
+	return s
 }
 
 // Dumb wait program to sync on callbacks, etc... Will timeout
@@ -1354,7 +1365,7 @@ func TestMaxChannels(t *testing.T) {
 	opts.MaxChannels = 10
 
 	// Run a NATS Streaming server
-	s := test.RunServerWithOpts(opts, nil)
+	s := runServerWithOpts(opts)
 	defer s.Shutdown()
 
 	sc := NewDefaultConnection(t)
@@ -1615,7 +1626,7 @@ func TestTimeoutOnRequests(t *testing.T) {
 	opts := server.GetDefaultOptions()
 	opts.ID = clusterName
 	opts.NATSServerURL = nats.DefaultURL
-	s := test.RunServerWithOpts(opts, nil)
+	s := runServerWithOpts(opts)
 	defer s.Shutdown()
 
 	sc := NewDefaultConnection(t)
