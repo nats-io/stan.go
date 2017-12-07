@@ -168,14 +168,16 @@ func runSubscriber(startwg, donewg *sync.WaitGroup, opts nats.Options, numMsgs i
 
 	args := flag.Args()
 	subj := args[0]
-	ch := make(chan bool)
-	start := time.Now()
+	ch := make(chan time.Time, 2)
 
 	received := 0
 	mcb := func(msg *stan.Msg) {
 		received++
+		if received == 1 {
+			ch <- time.Now()
+		}
 		if received >= numMsgs {
-			ch <- true
+			ch <- time.Now()
 		}
 	}
 
@@ -186,8 +188,9 @@ func runSubscriber(startwg, donewg *sync.WaitGroup, opts nats.Options, numMsgs i
 	}
 	startwg.Done()
 
-	<-ch
-	benchmark.AddSubSample(bench.NewSample(numMsgs, msgSize, start, time.Now(), snc.NatsConn()))
+	start := <-ch
+	end := <-ch
+	benchmark.AddSubSample(bench.NewSample(numMsgs, msgSize, start, end, snc.NatsConn()))
 	snc.Close()
 	nc.Close()
 	donewg.Done()
