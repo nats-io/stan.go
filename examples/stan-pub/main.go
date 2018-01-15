@@ -1,5 +1,4 @@
 // Copyright 2012-2016 Apcera Inc. All rights reserved.
-// +build ignore
 
 package main
 
@@ -79,7 +78,7 @@ func main() {
 		ch <- true
 	}
 
-	if async != true {
+	if !async {
 		err = sc.Publish(subj, msg)
 		if err != nil {
 			log.Fatalf("Error during publish: %v\n", err)
