@@ -35,6 +35,10 @@ func usage() {
 var benchmark *bench.Benchmark
 
 func main() {
+	var clusterID string
+	flag.StringVar(&clusterID, "c", "test-cluster", "The NATS Streaming cluster ID")
+	flag.StringVar(&clusterID, "cluster", "test-cluster", "The NATS Streaming cluster ID")
+
 	var urls = flag.String("s", nats.DefaultURL, "The NATS server URLs (separated by comma")
 	var tls = flag.Bool("tls", false, "Use TLS secure sonnection")
 	var numPubs = flag.Int("np", DefaultNumPubs, "Number of concurrent publishers")
@@ -76,7 +80,7 @@ func main() {
 	startwg.Add(*numSubs)
 	for i := 0; i < *numSubs; i++ {
 		subID := fmt.Sprintf("%s-sub-%d", *clientID, i)
-		go runSubscriber(&startwg, &donewg, opts, *numMsgs, *messageSize, *ignoreOld, subID)
+		go runSubscriber(&startwg, &donewg, opts, clusterID, *numMsgs, *messageSize, *ignoreOld, subID)
 	}
 	startwg.Wait()
 
@@ -85,7 +89,7 @@ func main() {
 	pubCounts := bench.MsgsPerClient(*numMsgs, *numPubs)
 	for i := 0; i < *numPubs; i++ {
 		pubID := fmt.Sprintf("%s-pub-%d", *clientID, i)
-		go runPublisher(&startwg, &donewg, opts, pubCounts[i], *messageSize, *async, pubID, *maxPubAcks)
+		go runPublisher(&startwg, &donewg, opts, clusterID, pubCounts[i], *messageSize, *async, pubID, *maxPubAcks)
 	}
 
 	log.Printf("Starting benchmark [msgs=%d, msgsize=%d, pubs=%d, subs=%d]\n", *numMsgs, *messageSize, *numPubs, *numSubs)
@@ -103,12 +107,12 @@ func main() {
 	}
 }
 
-func runPublisher(startwg, donewg *sync.WaitGroup, opts nats.Options, numMsgs int, msgSize int, async bool, pubID string, maxPubAcksInflight int) {
+func runPublisher(startwg, donewg *sync.WaitGroup, opts nats.Options, clusterID string, numMsgs int, msgSize int, async bool, pubID string, maxPubAcksInflight int) {
 	nc, err := opts.Connect()
 	if err != nil {
 		log.Fatalf("Publisher %s can't connect: %v\n", pubID, err)
 	}
-	snc, err := stan.Connect("test-cluster", pubID, stan.MaxPubAcksInflight(maxPubAcksInflight), stan.NatsConn(nc))
+	snc, err := stan.Connect(clusterID, pubID, stan.MaxPubAcksInflight(maxPubAcksInflight), stan.NatsConn(nc))
 	if err != nil {
 		log.Fatalf("Publisher %s can't connect: %v\n", pubID, err)
 	}
@@ -156,12 +160,12 @@ func runPublisher(startwg, donewg *sync.WaitGroup, opts nats.Options, numMsgs in
 	donewg.Done()
 }
 
-func runSubscriber(startwg, donewg *sync.WaitGroup, opts nats.Options, numMsgs int, msgSize int, ignoreOld bool, subID string) {
+func runSubscriber(startwg, donewg *sync.WaitGroup, opts nats.Options, clusterID string, numMsgs int, msgSize int, ignoreOld bool, subID string) {
 	nc, err := opts.Connect()
 	if err != nil {
 		log.Fatalf("Subscriber %s can't connect: %v\n", subID, err)
 	}
-	snc, err := stan.Connect("test-cluster", subID, stan.NatsConn(nc))
+	snc, err := stan.Connect(clusterID, subID, stan.NatsConn(nc))
 	if err != nil {
 		log.Fatalf("Subscriber %s can't connect: %v\n", subID, err)
 	}
