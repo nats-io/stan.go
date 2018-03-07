@@ -56,29 +56,29 @@ The options are described with examples below:
 // Subscribe starting with most recently published value
 sub, err := sc.Subscribe("foo", func(m *stan.Msg) {
     fmt.Printf("Received a message: %s\n", string(m.Data))
-}, StartWithLastReceived())
+}, stan.StartWithLastReceived())
 
 // Receive all stored values in order
 sub, err := sc.Subscribe("foo", func(m *stan.Msg) {
     fmt.Printf("Received a message: %s\n", string(m.Data))
-}, DeliverAllAvailable())
+}, stan.DeliverAllAvailable())
 
 // Receive messages starting at a specific sequence number
 sub, err := sc.Subscribe("foo", func(m *stan.Msg) {
     fmt.Printf("Received a message: %s\n", string(m.Data))
-}, StartAtSequence(22))
+}, stan.StartAtSequence(22))
 
 // Subscribe starting at a specific time
 var startTime time.Time
 ...
 sub, err := sc.Subscribe("foo", func(m *stan.Msg) {
     fmt.Printf("Received a message: %s\n", string(m.Data))
-}, StartAtTime(startTime))
+}, stan.StartAtTime(startTime))
 
 // Subscribe starting a specific amount of time in the past (e.g. 30 seconds ago)
 sub, err := sc.Subscribe("foo", func(m *stan.Msg) {
     fmt.Printf("Received a message: %s\n", string(m.Data))
-}, StartAtTimeDelta(time.ParseDuration("30s")))
+}, stan.StartAtTimeDelta(time.ParseDuration("30s")))
 ```
 
 ### Durable Subscriptions
