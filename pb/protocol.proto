@@ -31,7 +31,7 @@ message PubMsg {
   string subject  = 3;  // subject
   string reply    = 4;  // optional reply
   bytes  data     = 5;  // payload
-  bytes  uid      = 6;  // client's UID
+  bytes  connID   = 6;  // Connection ID. For servers that know about this field, clientID can be omitted
 
   bytes  sha256  = 10; // optional sha256 of data
 }
@@ -65,9 +65,11 @@ message Ack {
 message ConnectRequest {
   string clientID       = 1;  // Client name/identifier.
   string heartbeatInbox = 2;  // Inbox for server initiated heartbeats.
-  int64  pingInterval   = 4;  // Interval at which client wishes to send PINGs (time.Duration, so unit is nanoseconds).
-  int64  pingTimeout    = 5;  // Time to wait for a reply (time.Duration, so unit is nanoseconds).
-  int32  pingMaxOut     = 6;  // Maximum number of PINGs without a response after which the connection can be considered lost.
+  int32  protocol       = 3;  // Protocol the client is at.
+  bytes  connID         = 4;  // Connection ID, a way to uniquely identify a connection (no connection should ever have the same)
+  int64  pingInterval   = 5;  // Interval at which client wishes to send PINGs (time.Duration, so unit is nanoseconds).
+  int64  pingTimeout    = 6;  // Time to wait for a reply (time.Duration, so unit is nanoseconds).
+  int32  pingMaxOut     = 7;  // Maximum number of PINGs without a response after which the connection can be considered lost.
 }
 
 // Response to a client connect
@@ -82,8 +84,19 @@ message ConnectResponse {
   int64  pingInterval     = 8;   // Interval at which client should send PINGs (time.Duration, so unit is nanoseconds)
   int64  pingTimeout      = 9;   // Time to wait for a reply (time.Duration, so unit is nanoseconds)
   int32  pingMaxOut       = 10;  // Maximum number of PINGs without a response after which the connection can be considered lost
+  int32  protocol         = 11;  // Protocol version the server is at
 
   string publicKey     = 100; // Possibly used to sign acks, etc.
+}
+
+// PING from client to server
+message Ping {
+  bytes connID    = 1;  // Connection ID
+}
+
+// PING response from the server
+message PingResponse {
+  string error    = 1;  // Error string, empty/omitted if no error
 }
 
 // Enum for start position type.
