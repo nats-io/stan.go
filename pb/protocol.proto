@@ -68,8 +68,7 @@ message ConnectRequest {
   int32  protocol       = 3;  // Protocol the client is at.
   bytes  connID         = 4;  // Connection ID, a way to uniquely identify a connection (no connection should ever have the same)
   int64  pingInterval   = 5;  // Interval at which client wishes to send PINGs (time.Duration, so unit is nanoseconds).
-  int64  pingTimeout    = 6;  // Time to wait for a reply (time.Duration, so unit is nanoseconds).
-  int32  pingMaxOut     = 7;  // Maximum number of PINGs without a response after which the connection can be considered lost.
+  int32  pingMaxOut     = 6;  // Maximum number of PINGs without a response after which the connection can be considered lost.
 }
 
 // Response to a client connect
@@ -82,9 +81,8 @@ message ConnectResponse {
   string subCloseRequests = 6;   // Subject to use for subscription close requests
   string pingRequests     = 7;   // Subject to use for PING requests
   int64  pingInterval     = 8;   // Interval at which client should send PINGs (time.Duration, so unit is nanoseconds)
-  int64  pingTimeout      = 9;   // Time to wait for a reply (time.Duration, so unit is nanoseconds)
-  int32  pingMaxOut       = 10;  // Maximum number of PINGs without a response after which the connection can be considered lost
-  int32  protocol         = 11;  // Protocol version the server is at
+  int32  pingMaxOut       = 9;   // Maximum number of PINGs without a response after which the connection can be considered lost
+  int32  protocol         = 10;  // Protocol version the server is at
 
   string publicKey     = 100; // Possibly used to sign acks, etc.
 }
