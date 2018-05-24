@@ -2164,7 +2164,7 @@ func TestPings(t *testing.T) {
 	errCh := make(chan error, 1)
 	sc, err := Connect(clusterName, clientName,
 		Pings(pingInMillis(50), 5),
-		SetsConnectionLostHandler(func(sc Conn, err error) {
+		SetConnectionLostHandler(func(sc Conn, err error) {
 			errCh <- err
 		}))
 	if err != nil {
@@ -2204,7 +2204,7 @@ func TestPings(t *testing.T) {
 
 	sc, err = Connect(clusterName, clientName,
 		Pings(pingInMillis(50), 100),
-		SetsConnectionLostHandler(func(sc Conn, err error) {
+		SetConnectionLostHandler(func(sc Conn, err error) {
 			errCh <- err
 		}))
 	if err != nil {
@@ -2217,7 +2217,7 @@ func TestPings(t *testing.T) {
 	select {
 	case e := <-errCh:
 		if e != nats.ErrConnectionClosed {
-			t.Fatalf("Expected error %v, got %v", ErrMaxPings, e)
+			t.Fatalf("Expected error %v, got %v", nats.ErrConnectionClosed, e)
 		}
 	case <-time.After(2 * time.Second):
 		t.Fatalf("Error callback should have fired")
@@ -2283,7 +2283,7 @@ func TestConnErrHandlerNotCalledOnNormalClose(t *testing.T) {
 
 	errCh := make(chan error, 1)
 	sc, err := Connect(clusterName, clientName,
-		SetsConnectionLostHandler(func(_ Conn, err error) {
+		SetConnectionLostHandler(func(_ Conn, err error) {
 			errCh <- err
 		}))
 	if err != nil {
@@ -2405,7 +2405,7 @@ func TestPingsResponseError(t *testing.T) {
 		NatsConn(nc),
 		// Make it big enough so that we get the response error before we reach the max
 		Pings(pingInMillis(50), 100),
-		SetsConnectionLostHandler(func(_ Conn, err error) {
+		SetConnectionLostHandler(func(_ Conn, err error) {
 			errCh <- err
 		}))
 	if err != nil {

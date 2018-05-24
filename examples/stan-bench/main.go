@@ -123,7 +123,10 @@ func runPublisher(startwg, donewg *sync.WaitGroup, opts nats.Options, clusterID 
 	if err != nil {
 		log.Fatalf("Publisher %s can't connect: %v\n", pubID, err)
 	}
-	snc, err := stan.Connect(clusterID, pubID, stan.MaxPubAcksInflight(maxPubAcksInflight), stan.NatsConn(nc))
+	snc, err := stan.Connect(clusterID, pubID, stan.MaxPubAcksInflight(maxPubAcksInflight), stan.NatsConn(nc),
+		stan.SetConnectionLostHandler(func(_ stan.Conn, reason error) {
+			log.Fatalf("Connection lost, reason: %v", reason)
+		}))
 	if err != nil {
 		log.Fatalf("Publisher %s can't connect: %v\n", pubID, err)
 	}
@@ -176,7 +179,10 @@ func runSubscriber(startwg, donewg *sync.WaitGroup, opts nats.Options, clusterID
 	if err != nil {
 		log.Fatalf("Subscriber %s can't connect: %v\n", subID, err)
 	}
-	snc, err := stan.Connect(clusterID, subID, stan.NatsConn(nc))
+	snc, err := stan.Connect(clusterID, subID, stan.NatsConn(nc),
+		stan.SetConnectionLostHandler(func(_ stan.Conn, reason error) {
+			log.Fatalf("Connection lost, reason: %v", reason)
+		}))
 	if err != nil {
 		log.Fatalf("Subscriber %s can't connect: %v\n", subID, err)
 	}

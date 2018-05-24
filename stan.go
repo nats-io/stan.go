@@ -90,7 +90,7 @@ var (
 	ErrManualAck         = errors.New("stan: cannot manually ack in auto-ack mode")
 	ErrNilMsg            = errors.New("stan: nil message")
 	ErrNoServerSupport   = errors.New("stan: not supported by server")
-	ErrMaxPings          = errors.New("stan: maximum PINGs sent without a response")
+	ErrMaxPings          = errors.New("stan: connection lost due to PING failure")
 )
 
 var testAllowMillisecInPings = false
@@ -197,11 +197,11 @@ func Pings(interval, maxOut int) Option {
 	}
 }
 
-// SetsConnectionLostHandler is an Option to set the connection lost handler.
+// SetConnectionLostHandler is an Option to set the connection lost handler.
 // This callback will be invoked should the client permanently lose
 // contact with the server (or another client replaces it while being
 // disconnected). The callback will not be invoked on normal Conn.Close().
-func SetsConnectionLostHandler(handler ConnectionLostHandler) Option {
+func SetConnectionLostHandler(handler ConnectionLostHandler) Option {
 	return func(o *Options) error {
 		o.ConnectionLostCB = handler
 		return nil
