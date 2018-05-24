@@ -67,7 +67,7 @@ message ConnectRequest {
   string heartbeatInbox = 2;  // Inbox for server initiated heartbeats.
   int32  protocol       = 3;  // Protocol the client is at.
   bytes  connID         = 4;  // Connection ID, a way to uniquely identify a connection (no connection should ever have the same)
-  int64  pingInterval   = 5;  // Interval at which client wishes to send PINGs (time.Duration, so unit is nanoseconds).
+  int32  pingInterval   = 5;  // Interval at which client wishes to send PINGs (expressed in seconds).
   int32  pingMaxOut     = 6;  // Maximum number of PINGs without a response after which the connection can be considered lost.
 }
 
@@ -80,7 +80,7 @@ message ConnectResponse {
   string error            = 5;   // err string, empty/omitted if no error
   string subCloseRequests = 6;   // Subject to use for subscription close requests
   string pingRequests     = 7;   // Subject to use for PING requests
-  int64  pingInterval     = 8;   // Interval at which client should send PINGs (time.Duration, so unit is nanoseconds)
+  int32  pingInterval     = 8;   // Interval at which client should send PINGs (expressed in seconds).
   int32  pingMaxOut       = 9;   // Maximum number of PINGs without a response after which the connection can be considered lost
   int32  protocol         = 10;  // Protocol version the server is at
 
