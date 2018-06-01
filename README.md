@@ -239,6 +239,58 @@ NATS Streaming subscriptions **do not** support wildcards.
 
 ## Advanced Usage
 
+### Connection Status
+
+The fact that the NATS Streaming server and clients are not directly connected poses a challenge when it comes to know if a client is still valid.
+When a client disconnects, the streaming server is not notified, hence the importance of calling `Close()`. The server sends heartbeats
+to the client's private inbox and if it misses a certain number of responses, it will consider the client's connection lost and remove it
+from its state.
+
+Before version `0.4.0`, the client library was not sending PINGs to the streaming server to detect connection failure. This was problematic
+especially if an application was never sending data (had only subscriptions for instance). Picture the case where a client connects to a
+NATS Server which has a route to a NATS Streaming server (either connecting to a standalone NATS Server or the server it embeds). If the
+connection between the streaming server and the client's NATS Server is broken, the client's NATS connection would still be ok, yet, no
+communication with the streaming server is possible. This is why relying on `Conn.NatsConn()` to check the status is not helpful.
+
+Starting version `0.4.0` of this library and server `0.10.0`, the client library will now send PINGs at regular intervals (default is 5 seconds)
+and will close the streaming connection after a certain number of PINGs have been sent without any response (default is 3). When that
+happens, a callback - if one is registered - will be invoked to notify the user that the connection is permanently lost, and the reason
+for the failure.
+
+Here is how you would specify your own PING values and the callback:
+
+```go
+
+    // Send PINGs every 10 seconds, and fail after 5 PINGs without any response.
+    sc, err := stan.Connect(clusterName, clientName,
+        stan.Pings(10, 5),    
+        stan.SetConnectionLostHandler(func(_ stan.Conn, reason error) {
+            log.Fatalf("Connection lost, reason: %v", reason)
+        }))      
+```
+
+Note that the only way to be notified is to set the callback. If the callback is not set, PINGs are still sent and the connection
+will be closed if needed, but the application won't know if it has only subscriptions.
+
+When the connection is lost, your application would have to re-create it and all subscriptions if any.
+
+When no NATS connection is provided to the `Connect()` call, the library creates its own NATS connection and will now
+set the reconnect attempts to "infinite", which was not the case before. It should therefore be possible for the library to
+always reconnect, but this does not mean that the streaming connection will not be closed, even if you set a very high
+threshold for the PINGs max out value. Keep in mind that while the client is disconnected, the server is sending heartbeats to
+the clients too, and when not getting any response, it will remove that client from its state. When the communication is restored,
+the PINGs sent to the server will allow to detect this condition and report to the client that the connection is now closed.
+
+Also, while a client is "disconnected" from the server, another application with connectivity to the streaming server may
+connect and uses the same client ID. The server, when detecting the duplicate client ID, will try to contact the first client
+to know if it should reject the connect request of the second client. Since the communication between the server and the
+first client is broken, the server will not get a response and therefore will replace the first client with the second one.
+
+Prior to client `0.4.0` and server `0.10.0`, if the communication between the first client and server were to be restored,
+and the application would send messages, the server would accept those because the published messages client ID would be
+valid, although the client is not. With client at `0.4.0+` and server `0.10.0+`, additional information is sent with each
+message to allow the server to reject messages from a client that has been replaced by another client.
+
 ### Asynchronous Publishing
 
 The basic publish API (`Publish(subject, payload)`) is synchronous; it does not return control to the caller until the NATS Streaming server has acknowledged receipt of the message. To accomplish this, a [NUID](https://github.com/nats-io/nuid) is generated for the message on creation, and the client library waits for a publish acknowledgement from the server with a matching NUID before it returns control to the caller, possibly with an error indicating that the operation was not successful due to some server problem or authorization error.
