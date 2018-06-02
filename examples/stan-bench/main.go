@@ -146,6 +146,9 @@ func runPublisher(startwg, donewg *sync.WaitGroup, opts nats.Options, clusterID 
 	if async {
 		ch := make(chan bool)
 		acb := func(lguid string, err error) {
+			if err != nil {
+				log.Fatalf("Publisher %q got following error: %v", pubID, err)
+			}
 			published++
 			if published >= numMsgs {
 				ch <- true
