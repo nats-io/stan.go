@@ -306,7 +306,6 @@ Advanced users may wish to process these publish acknowledgements manually to ac
         }
     }
 
-    // can also use PublishAsyncWithReply(subj, replysubj, payload, ah)
     nuid, err := sc.PublishAsync("foo", []byte("Hello World"), ackHandler) // returns immediately
     if err != nil {
         log.Printf("Error publishing msg %s: %v\n", nuid, err.Error())
