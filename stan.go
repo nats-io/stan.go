@@ -67,6 +67,9 @@ type Conn interface {
 	// example, closing the wrapped NATS conn will put the NATS Streaming Conn
 	// in an invalid state.
 	NatsConn() *nats.Conn
+
+	RLock()
+	RUnlock()
 }
 
 const (
