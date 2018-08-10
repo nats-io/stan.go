@@ -60,6 +60,7 @@ type Subscription interface {
 	// for which this feature is not available, Close() will return a ErrNoServerSupport
 	// error.
 	Close() error
+	ack(*pb.MsgProto) error
 }
 
 // A subscription represents a subscription to a stan cluster.
@@ -436,14 +437,11 @@ func (sub *subscription) Close() error {
 	return sub.closeOrUnsubscribe(true)
 }
 
-// Ack manually acknowledges a message.
-// The subscriber had to be created with SetManualAckMode() option.
-func (msg *Msg) Ack() error {
+func (sub *subscription) ack(msg *pb.MsgProto) error {
 	if msg == nil {
 		return ErrNilMsg
 	}
 	// Look up subscription (cannot be nil)
-	sub := msg.Sub.(*subscription)
 	sub.RLock()
 	ackSubject := sub.ackInbox
 	isManualAck := sub.opts.ManualAcks
@@ -469,4 +467,13 @@ func (msg *Msg) Ack() error {
 	ack := &pb.Ack{Subject: msg.Subject, Sequence: msg.Sequence}
 	b, _ := ack.Marshal()
 	return nc.Publish(ackSubject, b)
+}
+
+// Ack manually acknowledges a message.
+// The subscriber had to be created with SetManualAckMode() option.
+func (msg *Msg) Ack() error {
+	if msg == nil {
+		return ErrNilMsg
+	}
+	return msg.Sub.ack(&msg.MsgProto)
 }
