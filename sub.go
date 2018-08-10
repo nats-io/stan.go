@@ -480,7 +480,7 @@ func (msg *Msg) Ack() error {
 	}
 	// Get nc from the connection (needs locking to avoid race)
 	sc.RLock()
-	nc := sc.nc
+	nc := sc.NatsConn()
 	sc.RUnlock()
 	if nc == nil {
 		return ErrBadConnection
