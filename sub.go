@@ -60,6 +60,13 @@ type Subscription interface {
 	// for which this feature is not available, Close() will return a ErrNoServerSupport
 	// error.
 	Close() error
+
+	GetAckInbox() string
+	GetOpts() SubscriptionOptions
+	GetConn() Conn
+
+	RLock()
+	RUnlock()
 }
 
 // A subscription represents a subscription to a stan cluster.
@@ -436,6 +443,21 @@ func (sub *subscription) Close() error {
 	return sub.closeOrUnsubscribe(true)
 }
 
+func (sub *subscription) GetAckInbox() string {
+	return sub.ackInbox
+}
+
+func (sub *subscription) GetOpts() SubscriptionOptions {
+	return sub.opts
+}
+
+func (sub *subscription) GetConn() Conn {
+	if sub.sc == nil {
+		return nil
+	}
+	return sub.sc
+}
+
 // Ack manually acknowledges a message.
 // The subscriber had to be created with SetManualAckMode() option.
 func (msg *Msg) Ack() error {
@@ -443,12 +465,11 @@ func (msg *Msg) Ack() error {
 		return ErrNilMsg
 	}
 	// Look up subscription (cannot be nil)
-	sub := msg.Sub.(*subscription)
-	sub.RLock()
-	ackSubject := sub.ackInbox
-	isManualAck := sub.opts.ManualAcks
-	sc := sub.sc
-	sub.RUnlock()
+	msg.Sub.RLock()
+	ackSubject := msg.Sub.GetAckInbox()
+	isManualAck := msg.Sub.GetOpts().ManualAcks
+	sc := msg.Sub.GetConn()
+	msg.Sub.RUnlock()
 
 	// Check for error conditions.
 	if !isManualAck {
@@ -459,7 +480,7 @@ func (msg *Msg) Ack() error {
 	}
 	// Get nc from the connection (needs locking to avoid race)
 	sc.RLock()
-	nc := sc.nc
+	nc := sc.NatsConn()
 	sc.RUnlock()
 	if nc == nil {
 		return ErrBadConnection
