@@ -2489,3 +2489,31 @@ func TestClientIDAndConnIDInPubMsg(t *testing.T) {
 		t.Fatal("Invalid ClientID and/or ConnID")
 	}
 }
+
+func TestRaceOnSubscribeAndConnClose(t *testing.T) {
+	s := RunServer(clusterName)
+	defer s.Shutdown()
+
+	cb := func(_ *Msg) {}
+	for i := 0; i < 100; i++ {
+		sc := NewDefaultConnection(t)
+		wg := sync.WaitGroup{}
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			i := 1
+			for {
+				if _, err := sc.Subscribe("foo", cb); err != nil {
+					return
+				}
+				i++
+			}
+		}()
+		// It's not a mistake.. not millisecond, just nano.
+		// The runtime.Gosched() is not helping producing the race,
+		// but calling Sleep() with tiny amount does.
+		time.Sleep(time.Duration(rand.Intn(50)))
+		sc.Close()
+		wg.Wait()
+	}
+}
