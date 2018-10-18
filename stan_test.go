@@ -2501,12 +2501,10 @@ func TestRaceOnSubscribeAndConnClose(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			i := 1
 			for {
 				if _, err := sc.Subscribe("foo", cb); err != nil {
 					return
 				}
-				i++
 			}
 		}()
 		// It's not a mistake.. not millisecond, just nano.
