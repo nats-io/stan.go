@@ -240,6 +240,27 @@ NATS Streaming subscriptions **do not** support wildcards.
 
 ## Advanced Usage
 
+### Connection configuration such as TLS, etc..
+
+If you want more advanced configuration of the underlying NATS Connection, you will need
+to create a NATS connection and pass that connection to the `stan.Connect()` call with
+the `stan.NatsConn()` option.
+
+```go
+// Create a NATS connection that you can configure the way you want
+nc, err = nats.Connect("tls://localhost:4443", nats.ClientCert("mycerts/client-cert.pem", "mycerts/client-key.pem"))
+if (err != nil)
+ ...
+
+// Then pass it to the stan.Connect() call.
+sc, err = stan.Connect("test-cluster", "me", stan.NatsConn(nc))
+if (err != nil)
+ ...
+
+// Note that you will be responsible for closing the NATS Connection after the streaming
+// connection has been closed.
+```
+
 ### Connection Status
 
 The fact that the NATS Streaming server and clients are not directly connected poses a challenge when it comes to know if a client is still valid.
