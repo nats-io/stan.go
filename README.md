@@ -28,6 +28,7 @@ go get github.com/nats-io/go-nats-streaming
 ## Basic Usage
 
 ```go
+import stan "github.com/nats-io/go-nats-streaming"
 
 sc, _ := stan.Connect(clusterID, clientID)
 
