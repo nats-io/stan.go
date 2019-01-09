@@ -188,7 +188,7 @@ func Pings(interval, maxOut int) Option {
 		// do not check values.
 		if !testAllowMillisecInPings {
 			if interval < 1 || maxOut <= 2 {
-				return fmt.Errorf("Invalid ping values: interval=%v (min>0) maxOut=%v (min=2)", interval, maxOut)
+				return fmt.Errorf("invalid ping values: interval=%v (min>0) maxOut=%v (min=2)", interval, maxOut)
 			}
 		}
 		o.PingIterval = interval
@@ -586,7 +586,7 @@ func (sc *conn) processAck(m *nats.Msg) {
 	pa := &pb.PubAck{}
 	err := pa.Unmarshal(m.Data)
 	if err != nil {
-		panic(fmt.Errorf("Error during ack unmarshal: %v", err))
+		panic(fmt.Errorf("error during ack unmarshal: %v", err))
 	}
 
 	// Remove
@@ -722,7 +722,7 @@ func (sc *conn) processMsg(raw *nats.Msg) {
 	msg := &Msg{}
 	err := msg.Unmarshal(raw.Data)
 	if err != nil {
-		panic(fmt.Errorf("Error processing unmarshal for msg: %v", err))
+		panic(fmt.Errorf("error processing unmarshal for msg: %v", err))
 	}
 	// Lookup the subscription
 	sc.RLock()
