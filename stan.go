@@ -132,6 +132,8 @@ var DefaultOptions = Options{
 type Option func(*Options) error
 
 // NatsURL is an Option to set the URL the client should connect to.
+// The url can contain username/password semantics. e.g. nats://derek:pass@localhost:4222
+// Comma separated arrays are also supported, e.g. urlA, urlB.
 func NatsURL(u string) Option {
 	return func(o *Options) error {
 		o.NatsURL = u
