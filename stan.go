@@ -294,8 +294,7 @@ func Connect(stanClusterID, clientID string, options ...Option) (Conn, error) {
 	// Prepare a subscription on ping responses, even if we are not
 	// going to need it, so that if that fails, it fails before initiating
 	// a connection.
-	pingSub, err := c.nc.Subscribe(nats.NewInbox(), c.processPingResponse)
-	if err != nil {
+	if c.pingSub, err = c.nc.Subscribe(nats.NewInbox(), c.processPingResponse); err != nil {
 		c.Close()
 		return nil, err
 	}
@@ -369,7 +368,7 @@ func Connect(stanClusterID, clientID string, options ...Option) (Conn, error) {
 
 			// These will be immutable.
 			c.pingRequests = cr.PingRequests
-			c.pingInbox = pingSub.Subject
+			c.pingInbox = c.pingSub.Subject
 			// In test, it is possible that we get a negative value
 			// to represent milliseconds.
 			if testAllowMillisecInPings && cr.PingInterval < 0 {
@@ -380,7 +379,6 @@ func Connect(stanClusterID, clientID string, options ...Option) (Conn, error) {
 			}
 			c.pingMaxOut = int(cr.PingMaxOut)
 			c.pingBytes, _ = (&pb.Ping{ConnID: c.connID}).Marshal()
-			c.pingSub = pingSub
 			// Set the timer now that we are set. Use lock to create
 			// synchronization point.
 			c.pingMu.Lock()
@@ -389,7 +387,8 @@ func Connect(stanClusterID, clientID string, options ...Option) (Conn, error) {
 		}
 	}
 	if unsubPingSub {
-		pingSub.Unsubscribe()
+		c.pingSub.Unsubscribe()
+		c.pingSub = nil
 	}
 
 	// Attach a finalizer
@@ -490,13 +489,18 @@ func (sc *conn) cleanupOnClose(err error) {
 	}
 	sc.pingMu.Unlock()
 
-	// Unsubscribe only if the NATS connection is not already closed...
-	if !sc.nc.IsClosed() {
-		if sc.ackSubscription != nil {
-			sc.ackSubscription.Unsubscribe()
+	// Unsubscribe only if the NATS connection is not already closed
+	// and we don't own it (otherwise connection is going to be closed
+	// so no need for explicit unsubscribe).
+	if !sc.ncOwned && !sc.nc.IsClosed() {
+		if sc.hbSubscription != nil {
+			sc.hbSubscription.Unsubscribe()
 		}
 		if sc.pingSub != nil {
 			sc.pingSub.Unsubscribe()
+		}
+		if sc.ackSubscription != nil {
+			sc.ackSubscription.Unsubscribe()
 		}
 	}
 	// Fail all pending pubs

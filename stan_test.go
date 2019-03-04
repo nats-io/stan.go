@@ -2515,3 +2515,41 @@ func TestRaceOnSubscribeAndConnClose(t *testing.T) {
 		wg.Wait()
 	}
 }
+
+func TestNATSSubscriptionLeakOnFailedConnect(t *testing.T) {
+	s := RunServer(clusterName)
+	defer s.Shutdown()
+
+	sc1 := NewDefaultConnection(t)
+	defer sc1.Close()
+
+	nc, err := nats.Connect(nats.DefaultURL)
+	if err != nil {
+		t.Fatalf("Error on connect: %v", err)
+	}
+	defer nc.Close()
+
+	// The very first time the library will issue a request reply, the NATS
+	// library will create a wildcard subscription on inbox. So don't count
+	// this one.
+	orgNumSubs := nc.NumSubscriptions() + 1
+
+	for i := 0; i < 10; i++ {
+		if _, err := Connect(clusterName, clientName, NatsConn(nc)); err == nil {
+			t.Fatalf("Expected failure to connect")
+		}
+	}
+
+	ok := false
+	for i := 0; i < 10; i++ {
+		if curNumsubs := nc.NumSubscriptions(); curNumsubs != orgNumSubs {
+			time.Sleep(100 * time.Millisecond)
+			continue
+		}
+		ok = true
+		break
+	}
+	if !ok {
+		t.Fatalf("Extra subscriptions: %v", nc.NumSubscriptions()-orgNumSubs)
+	}
+}
