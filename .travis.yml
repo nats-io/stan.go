@@ -3,6 +3,7 @@ sudo: false
 go:
 - 1.10.x
 - 1.11.x
+- 1.12.x
 install:
 - go get -t ./...
 - go get github.com/nats-io/nats-streaming-server
@@ -19,4 +20,4 @@ script:
 - go test -i -race ./...
 - go test -v -race ./...
 after_success:
-- if [[ "$TRAVIS_GO_VERSION" =~ 1.11 ]]; then ./scripts/cov.sh TRAVIS; fi
+- if [[ "$TRAVIS_GO_VERSION" =~ 1.12 ]]; then ./scripts/cov.sh TRAVIS; fi
