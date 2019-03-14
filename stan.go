@@ -1,4 +1,4 @@
-// Copyright 2016-2018 The NATS Authors
+// Copyright 2016-2019 The NATS Authors
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -27,7 +27,7 @@ import (
 )
 
 // Version is the NATS Streaming Go Client version
-const Version = "0.4.1"
+const Version = "0.4.2"
 
 const (
 	// DefaultNatsURL is the default URL the client connects to
