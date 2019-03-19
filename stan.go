@@ -287,7 +287,7 @@ func Connect(stanClusterID, clientID string, options ...Option) (Conn, error) {
 	hbInbox := nats.NewInbox()
 	var err error
 	if c.hbSubscription, err = c.nc.Subscribe(hbInbox, c.processHeartBeat); err != nil {
-		c.Close()
+		c.failConnect(err)
 		return nil, err
 	}
 
@@ -295,7 +295,7 @@ func Connect(stanClusterID, clientID string, options ...Option) (Conn, error) {
 	// going to need it, so that if that fails, it fails before initiating
 	// a connection.
 	if c.pingSub, err = c.nc.Subscribe(nats.NewInbox(), c.processPingResponse); err != nil {
-		c.Close()
+		c.failConnect(err)
 		return nil, err
 	}
 
@@ -312,7 +312,7 @@ func Connect(stanClusterID, clientID string, options ...Option) (Conn, error) {
 	b, _ := req.Marshal()
 	reply, err := c.nc.Request(discoverSubject, b, c.opts.ConnectTimeout)
 	if err != nil {
-		c.Close()
+		c.failConnect(err)
 		if err == nats.ErrTimeout {
 			return nil, ErrConnectReqTimeout
 		}
@@ -322,13 +322,16 @@ func Connect(stanClusterID, clientID string, options ...Option) (Conn, error) {
 	cr := &pb.ConnectResponse{}
 	err = cr.Unmarshal(reply.Data)
 	if err != nil {
-		c.Close()
+		c.failConnect(err)
 		return nil, err
 	}
 	if cr.Error != "" {
-		c.Close()
+		c.failConnect(err)
 		return nil, errors.New(cr.Error)
 	}
+
+	// Past this point, we need to call Close() on error because the server
+	// has accepted our connection.
 
 	// Capture cluster configuration endpoints to publish and subscribe/unsubscribe.
 	c.pubPrefix = cr.PubPrefix
@@ -395,6 +398,16 @@ func Connect(stanClusterID, clientID string, options ...Option) (Conn, error) {
 	runtime.SetFinalizer(&c, func(sc *conn) { sc.Close() })
 
 	return &c, nil
+}
+
+// Invoked on a failed connect.
+// Perform appropriate cleanup operations but do not attempt to send
+// a close request.
+func (sc *conn) failConnect(err error) {
+	sc.cleanupOnClose(err)
+	if sc.nc != nil && sc.ncOwned {
+		sc.nc.Close()
+	}
 }
 
 // Sends a PING (containing the connection's ID) to the server at intervals
