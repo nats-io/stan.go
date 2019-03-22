@@ -358,7 +358,7 @@ func Connect(stanClusterID, clientID string, options ...Option) (Conn, error) {
 	c.connLostCB = c.opts.ConnectionLostCB
 
 	unsubPingSub := true
-	// Do this with servers which are at least at protcolOne.
+	// Do this with servers which are at least at protocolOne.
 	if cr.Protocol >= protocolOne {
 		// Note that in the future server may override client ping
 		// interval value sent in ConnectRequest, so use the
@@ -474,7 +474,7 @@ func (sc *conn) closeDueToPing(err error) {
 	}
 	// Stop timer, unsubscribe, fail the pubs, etc..
 	sc.cleanupOnClose(err)
-	// No need to send Close prototol, so simply close the underlying
+	// No need to send Close protocol, so simply close the underlying
 	// NATS connection (if we own it, and if not already closed)
 	if sc.ncOwned && !sc.nc.IsClosed() {
 		sc.nc.Close()

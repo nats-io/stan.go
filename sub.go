@@ -183,7 +183,7 @@ func SetManualAckMode() SubscriptionOption {
 	}
 }
 
-// DurableName sets the DurableName for the subcriber.
+// DurableName sets the DurableName for the subscriber.
 func DurableName(name string) SubscriptionOption {
 	return func(o *SubscriptionOptions) error {
 		o.DurableName = name
