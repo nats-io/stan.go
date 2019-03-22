@@ -106,11 +106,11 @@ type ConnectionLostHandler func(Conn, error)
 
 // Options can be used to a create a customized connection.
 type Options struct {
-	// NatsURL is an ULR (or comma separated list of URLs) to a node or nodes
+	// NatsURL is an URL (or comma separated list of URLs) to a node or nodes
 	// in the cluster.
 	NatsURL string
 
-	// NatsConn is an user provided low-level NATS Connection that the streaming
+	// NatsConn is a user provided low-level NATS Connection that the streaming
 	// connection will use to communicate with the cluster.
 	NatsConn *nats.Conn
 
@@ -128,7 +128,8 @@ type Options struct {
 	DiscoverPrefix string
 
 	// MaxPubAcksInflight specifies how many messages can be published without
-	// getting ACKs back from server before the API blocks.
+	// getting ACKs back from the cluster before the Publish() or PublishAsync()
+	// calls block.
 	MaxPubAcksInflight int
 
 	// PingInterval is the interval at which client sends PINGs to the server
