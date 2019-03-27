@@ -106,15 +106,43 @@ type ConnectionLostHandler func(Conn, error)
 
 // Options can be used to a create a customized connection.
 type Options struct {
-	NatsURL            string
-	NatsConn           *nats.Conn
-	ConnectTimeout     time.Duration
-	AckTimeout         time.Duration
-	DiscoverPrefix     string
+	// NatsURL is an URL (or comma separated list of URLs) to a node or nodes
+	// in the cluster.
+	NatsURL string
+
+	// NatsConn is a user provided low-level NATS Connection that the streaming
+	// connection will use to communicate with the cluster.
+	NatsConn *nats.Conn
+
+	// ConnectTimeout is the timeout for the initial Connect(). This value is also
+	// used for some of the internal request/replies with the cluster.
+	ConnectTimeout time.Duration
+
+	// AckTimeout is how long to wait when a message is published for an ACK from
+	// the cluster. If the library does not receive an ACK after this timeout,
+	// the Publish() call (or the AckHandler) will return ErrTimeout.
+	AckTimeout time.Duration
+
+	// DiscoverPrefix is the prefix connect requests are sent to for this cluster.
+	// The default is "_STAN.discover".
+	DiscoverPrefix string
+
+	// MaxPubAcksInflight specifies how many messages can be published without
+	// getting ACKs back from the cluster before the Publish() or PublishAsync()
+	// calls block.
 	MaxPubAcksInflight int
-	PingIterval        int // In seconds
-	PingMaxOut         int
-	ConnectionLostCB   ConnectionLostHandler
+
+	// PingInterval is the interval at which client sends PINGs to the server
+	// to detect the loss of a connection.
+	PingIterval int
+
+	// PingMaxOut specifies the maximum number of PINGs without a corresponding
+	// PONG before declaring the connection permanently lost.
+	PingMaxOut int
+
+	// ConnectionLostCB specifies the handler to be invoked when the connection
+	// is permanently lost.
+	ConnectionLostCB ConnectionLostHandler
 }
 
 // DefaultOptions are the NATS Streaming client's default options
