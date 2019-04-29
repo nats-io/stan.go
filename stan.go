@@ -50,17 +50,31 @@ const (
 // Conn represents a connection to the NATS Streaming subsystem. It can Publish and
 // Subscribe to messages within the NATS Streaming cluster.
 type Conn interface {
-	// Publish
+	// Publish will publish to the cluster and wait for an ACK.
 	Publish(subject string, data []byte) error
+
+	// PublishAsync will publish to the cluster and asynchronously process
+	// the ACK or error state. It will return the GUID for the message being sent.
 	PublishAsync(subject string, data []byte, ah AckHandler) (string, error)
 
-	// Subscribe
+	// Subscribe will perform a subscription with the given options to the cluster.
+	// If no option is specified, DefaultSubscriptionOptions are used. The default start
+	// position is to receive new messages only (messages published after the subscription is
+	// registered in the cluster).
 	Subscribe(subject string, cb MsgHandler, opts ...SubscriptionOption) (Subscription, error)
 
-	// QueueSubscribe
+	// QueueSubscribe will perform a queue subscription with the given options to the cluster.
+	// If no option is specified, DefaultSubscriptionOptions are used. The default start
+	// position is to receive new messages only (messages published after the subscription is
+	// registered in the cluster).
 	QueueSubscribe(subject, qgroup string, cb MsgHandler, opts ...SubscriptionOption) (Subscription, error)
 
-	// Close
+	// Close a connection to the cluster.
+	// If there are active subscriptions at the time of the close, they are implicitly closed
+	// (not unsubscribed) by the cluster. This means that durable subscriptions are maintained.
+	// The wait on asynchronous publish calls are canceled and ErrConnectionClosed will be
+	// reported to the registered AckHandler. Note that it is possible that the cluster received
+	// and persisted successfully these messages.
 	Close() error
 
 	// NatsConn returns the underlying NATS conn. Use this with care. For
