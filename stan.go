@@ -17,7 +17,6 @@ package stan
 import (
 	"errors"
 	"fmt"
-	"runtime"
 	"sync"
 	"time"
 
@@ -448,9 +447,6 @@ func Connect(stanClusterID, clientID string, options ...Option) (Conn, error) {
 		c.pingSub = nil
 	}
 
-	// Attach a finalizer
-	runtime.SetFinalizer(&c, func(sc *conn) { sc.Close() })
-
 	return &c, nil
 }
 
@@ -570,6 +566,7 @@ func (sc *conn) cleanupOnClose(err error) {
 			sc.ackSubscription.Unsubscribe()
 		}
 	}
+
 	// Fail all pending pubs
 	for guid, pubAck := range sc.pubAckMap {
 		if pubAck.t != nil {
@@ -797,11 +794,14 @@ func (sc *conn) processMsg(raw *nats.Msg) {
 	if err != nil {
 		panic(fmt.Errorf("error processing unmarshal for msg: %v", err))
 	}
+	var sub *subscription
 	// Lookup the subscription
 	sc.RLock()
 	nc := sc.nc
 	isClosed := nc == nil
-	sub := sc.subMap[raw.Subject]
+	if !isClosed {
+		sub = sc.subMap[raw.Subject]
+	}
 	sc.RUnlock()
 
 	// Check if sub is no longer valid or connection has been closed.
