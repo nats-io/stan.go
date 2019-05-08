@@ -31,9 +31,9 @@ import (
 	"testing"
 	"time"
 
-	natsd "github.com/nats-io/gnatsd/test"
 	"github.com/nats-io/go-nats"
 	"github.com/nats-io/go-nats-streaming/pb"
+	natsd "github.com/nats-io/nats-server/test"
 	"github.com/nats-io/nats-streaming-server/server"
 )
 
@@ -2570,4 +2570,43 @@ func TestNATSSubscriptionLeakOnFailedConnect(t *testing.T) {
 	if !ok {
 		t.Fatalf("Extra subscriptions: %v", nc.NumSubscriptions()-orgNumSubs)
 	}
+}
+
+func TestNoMemoryLeak(t *testing.T) {
+	s := RunServer(clusterName)
+	defer s.Shutdown()
+
+	runtime.GC()
+
+	oldMem := runtime.MemStats{}
+	runtime.ReadMemStats(&oldMem)
+
+	for i := 0; i < 500; i++ {
+		sc := NewDefaultConnection(t)
+		if _, err := sc.Subscribe("foo", func(_ *Msg) {}); err != nil {
+			t.Fatalf("Error on subscribe: %v", err)
+		}
+		if _, err := sc.PublishAsync("foo", []byte("hello"), nil); err != nil {
+			t.Fatalf("Error on publish: %v", err)
+		}
+		sc.Close()
+	}
+
+	oldInUse := oldMem.HeapInuse
+	oneMB := uint64(1024 * 1024)
+	var newInUse uint64
+
+	for i := 0; i < 5; i++ {
+		runtime.GC()
+
+		newMem := runtime.MemStats{}
+		runtime.ReadMemStats(&newMem)
+		newInUse = newMem.HeapInuse
+
+		if newInUse-oldInUse <= 5*oneMB {
+			return
+		}
+		time.Sleep(15 * time.Millisecond)
+	}
+	t.Fatalf("Heap in use seem high: old=%vMB - new=%vMB", oldInUse/oneMB, newInUse/oneMB)
 }
