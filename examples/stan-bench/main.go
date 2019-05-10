@@ -23,9 +23,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/nats-io/go-nats"
-	"github.com/nats-io/go-nats-streaming"
-	"github.com/nats-io/go-nats/bench"
+	"github.com/nats-io/nats.go"
+	"github.com/nats-io/nats.go/bench"
+	"github.com/nats-io/stan.go"
 )
 
 // Some sane defaults
