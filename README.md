@@ -22,7 +22,7 @@ NATS Streaming provides the following high-level feature set:
 
 ```bash
 # Go client
-go get github.com/nats-io/stan.go
+go get github.com/nats-io/stan.go/
 ```
 
 ## Basic Usage
