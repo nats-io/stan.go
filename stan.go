@@ -165,9 +165,11 @@ type Options struct {
 	// calls block.
 	MaxPubAcksInflight int
 
+	// Deprecated use PingInterval instead
 	// PingInterval is the interval at which client sends PINGs to the server
 	// to detect the loss of a connection.
-	PingIterval int
+	PingIterval  int
+	PingInterval int
 
 	// PingMaxOut specifies the maximum number of PINGs without a corresponding
 	// PONG before declaring the connection permanently lost.
@@ -187,6 +189,7 @@ func GetDefaultOptions() Options {
 		DiscoverPrefix:     DefaultDiscoverPrefix,
 		MaxPubAcksInflight: DefaultMaxPubAcksInflight,
 		PingIterval:        DefaultPingInterval,
+		PingInterval:       DefaultPingInterval,
 		PingMaxOut:         DefaultPingMaxOut,
 	}
 }
@@ -264,6 +267,7 @@ func Pings(interval, maxOut int) Option {
 			}
 		}
 		o.PingIterval = interval
+		o.PingInterval = interval
 		o.PingMaxOut = maxOut
 		return nil
 	}
@@ -341,8 +345,11 @@ func (o Options) Connect() (Conn, error) {
 	if o.MaxPubAcksInflight == 0 {
 		o.MaxPubAcksInflight = DefaultMaxInflight
 	}
-	if o.PingIterval == 0 {
-		o.PingIterval = DefaultPingInterval
+	if o.PingIterval != 0 {
+		o.PingInterval = o.PingIterval
+	}
+	if o.PingInterval == 0 {
+		o.PingInterval = DefaultPingInterval
 	}
 	if o.PingMaxOut == 0 {
 		o.PingMaxOut = DefaultPingMaxOut
@@ -396,7 +403,7 @@ func (o Options) Connect() (Conn, error) {
 		HeartbeatInbox: hbInbox,
 		ConnID:         c.connID,
 		Protocol:       protocolOne,
-		PingInterval:   int32(c.opts.PingIterval),
+		PingInterval:   int32(c.opts.PingInterval),
 		PingMaxOut:     int32(c.opts.PingMaxOut),
 	}
 	b, _ := req.Marshal()
