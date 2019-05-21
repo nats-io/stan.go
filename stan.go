@@ -105,6 +105,8 @@ var (
 	ErrUnsubReqTimeout   = errors.New("stan: unsubscribe request timeout")
 	ErrConnectionClosed  = errors.New("stan: connection closed")
 	ErrTimeout           = errors.New("stan: publish ack timeout")
+	ErrBadClusterID      = errors.New("stan: invalid cluster ID")
+	ErrBadClientID       = errors.New("stan: invalid client ID")
 	ErrBadAck            = errors.New("stan: malformed ack")
 	ErrBadSubscription   = errors.New("stan: invalid subscription")
 	ErrBadConnection     = errors.New("stan: invalid connection")
@@ -138,6 +140,13 @@ type Options struct {
 	// the supplied NATS connection.
 	NatsConn *nats.Conn
 
+	// ClusterID is the id of Nats cluster
+	ClusterID string
+
+	// ClientID is the client id in Nats cluster
+	// Note that ClientID can contain only alphanumeric and `-` or `_` characters.
+	ClientID string
+
 	// ConnectTimeout is the timeout for the initial Connect(). This value is also
 	// used for some of the internal request/replies with the cluster.
 	ConnectTimeout time.Duration
@@ -169,16 +178,24 @@ type Options struct {
 	ConnectionLostCB ConnectionLostHandler
 }
 
-// DefaultOptions are the NATS Streaming client's default options
-var DefaultOptions = Options{
-	NatsURL:            DefaultNatsURL,
-	ConnectTimeout:     DefaultConnectWait,
-	AckTimeout:         DefaultAckWait,
-	DiscoverPrefix:     DefaultDiscoverPrefix,
-	MaxPubAcksInflight: DefaultMaxPubAcksInflight,
-	PingIterval:        DefaultPingInterval,
-	PingMaxOut:         DefaultPingMaxOut,
+// GetDefaultOptions returns default configuration options for the client.
+func GetDefaultOptions() Options {
+	return Options{
+		NatsURL:            DefaultNatsURL,
+		ConnectTimeout:     DefaultConnectWait,
+		AckTimeout:         DefaultAckWait,
+		DiscoverPrefix:     DefaultDiscoverPrefix,
+		MaxPubAcksInflight: DefaultMaxPubAcksInflight,
+		PingIterval:        DefaultPingInterval,
+		PingMaxOut:         DefaultPingMaxOut,
+	}
 }
+
+// DEPRECATED: Use GetDefaultOptions() instead.
+// DefaultOptions is not safe for use by multiple clients.
+// For details see https://github.com/nats-io/nats.go/issues/308.
+// DefaultOptions are the NATS Streaming client's default options
+var DefaultOptions = GetDefaultOptions()
 
 // Option is a function on the options for a connection.
 type Option func(*Options) error
@@ -266,7 +283,6 @@ func SetConnectionLostHandler(handler ConnectionLostHandler) Option {
 // A conn represents a bare connection to a stan cluster.
 type conn struct {
 	sync.RWMutex
-	clientID         string
 	connID           []byte // This is a NUID that uniquely identify connections.
 	pubPrefix        string // Publish prefix set by stan, append our subject.
 	subRequests      string // Subject to send subscription requests.
@@ -303,16 +319,37 @@ type ack struct {
 	ch chan error
 }
 
-// Connect will form a connection to the NATS Streaming subsystem.
-// Note that clientID can contain only alphanumeric and `-` or `_` characters.
-func Connect(stanClusterID, clientID string, options ...Option) (Conn, error) {
+// Connect will attempt to connect to a NATS streaming server with multiple options.
+func (o Options) Connect() (Conn, error) {
 	// Process Options
-	c := conn{clientID: clientID, opts: DefaultOptions, connID: []byte(nuid.Next()), pubNUID: nuid.New()}
-	for _, opt := range options {
-		if err := opt(&c.opts); err != nil {
-			return nil, err
-		}
+	if o.ClientID == "" {
+		return nil, ErrBadClientID
 	}
+	if o.ClusterID == "" {
+		return nil, ErrBadClusterID
+	}
+	// Some default options processing.
+	if o.AckTimeout == 0 {
+		o.AckTimeout = DefaultAckWait
+	}
+	if o.ConnectTimeout == 0 {
+		o.ConnectTimeout = DefaultConnectWait
+	}
+	if o.DiscoverPrefix == "" {
+		o.DiscoverPrefix = DefaultDiscoverPrefix
+	}
+	if o.MaxPubAcksInflight == 0 {
+		o.MaxPubAcksInflight = DefaultMaxInflight
+	}
+	if o.PingIterval == 0 {
+		o.PingIterval = DefaultPingInterval
+	}
+	if o.PingMaxOut == 0 {
+		o.PingMaxOut = DefaultPingMaxOut
+	}
+
+	c := conn{opts: o, connID: []byte(nuid.Next()), pubNUID: nuid.New()}
+
 	// Check if the user has provided a connection as an option
 	c.nc = c.opts.NatsConn
 	// Create a NATS connection if it doesn't exist.
@@ -323,7 +360,7 @@ func Connect(stanClusterID, clientID string, options ...Option) (Conn, error) {
 		// reconnect while the API may have returned an error due
 		// to PubAck timeout.
 		nc, err := nats.Connect(c.opts.NatsURL,
-			nats.Name(clientID),
+			nats.Name(o.ClientID),
 			nats.MaxReconnects(-1),
 			nats.ReconnectBufSize(-1))
 		if err != nil {
@@ -353,9 +390,9 @@ func Connect(stanClusterID, clientID string, options ...Option) (Conn, error) {
 	}
 
 	// Send Request to discover the cluster
-	discoverSubject := c.opts.DiscoverPrefix + "." + stanClusterID
+	discoverSubject := c.opts.DiscoverPrefix + "." + o.ClusterID
 	req := &pb.ConnectRequest{
-		ClientID:       clientID,
+		ClientID:       o.ClientID,
 		HeartbeatInbox: hbInbox,
 		ConnID:         c.connID,
 		Protocol:       protocolOne,
@@ -448,6 +485,22 @@ func Connect(stanClusterID, clientID string, options ...Option) (Conn, error) {
 	}
 
 	return &c, nil
+}
+
+// Connect will form a connection to the NATS Streaming subsystem.
+// Note that clientID can contain only alphanumeric and `-` or `_` characters.
+func Connect(stanClusterID, clientID string, options ...Option) (Conn, error) {
+	opts := GetDefaultOptions()
+	opts.ClusterID = stanClusterID
+	opts.ClientID = clientID
+	for _, opt := range options {
+		if opt != nil {
+			if err := opt(&opts); err != nil {
+				return nil, err
+			}
+		}
+	}
+	return opts.Connect()
 }
 
 // Invoked on a failed connect.
@@ -610,7 +663,7 @@ func (sc *conn) Close() error {
 	sc.nc = nil
 	sc.pingMu.Unlock()
 
-	req := &pb.CloseRequest{ClientID: sc.clientID}
+	req := &pb.CloseRequest{ClientID: sc.opts.ClientID}
 	b, _ := req.Marshal()
 	reply, err := nc.Request(sc.closeRequests, b, sc.opts.ConnectTimeout)
 	if err != nil {
@@ -709,7 +762,7 @@ func (sc *conn) publishAsync(subject string, data []byte, ah AckHandler, ch chan
 	peGUID := sc.pubNUID.Next()
 	// We send connID regardless of server we connect to. Older server
 	// will simply not decode it.
-	pe := &pb.PubMsg{ClientID: sc.clientID, Guid: peGUID, Subject: subject, Data: data, ConnID: sc.connID}
+	pe := &pb.PubMsg{ClientID: sc.opts.ClientID, Guid: peGUID, Subject: subject, Data: data, ConnID: sc.connID}
 	b, _ := pe.Marshal()
 
 	// Map ack to guid.

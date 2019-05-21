@@ -893,7 +893,7 @@ func TestUnsubscribe(t *testing.T) {
 	}
 	// Override clientID to get an error on Subscription.Close() and Unsubscribe()
 	sc.(*conn).Lock()
-	sc.(*conn).clientID = "foobar"
+	sc.(*conn).opts.ClientID = "foobar"
 	sc.(*conn).Unlock()
 	if err := sub1.Close(); err == nil || !strings.Contains(err.Error(), "unknown") {
 		t.Fatalf("Expected error about unknown clientID, got %v", err)
@@ -982,7 +982,7 @@ func TestClose(t *testing.T) {
 	sc = NewDefaultConnection(t)
 	// Override the clientID so that we get an error on close
 	sc.(*conn).Lock()
-	sc.(*conn).clientID = "foobar"
+	sc.(*conn).opts.ClientID = "foobar"
 	sc.(*conn).Unlock()
 	if err := sc.Close(); err == nil || !strings.Contains(err.Error(), "unknown") {
 		t.Fatalf("Expected error about unknown clientID, got %v", err)

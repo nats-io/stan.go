@@ -262,7 +262,7 @@ func (sc *conn) subscribe(subject, qgroup string, cb MsgHandler, options ...Subs
 	// Create a subscription request
 	// FIXME(dlc) add others.
 	sr := &pb.SubscriptionRequest{
-		ClientID:      sc.clientID,
+		ClientID:      sc.opts.ClientID,
 		Subject:       subject,
 		QGroup:        qgroup,
 		Inbox:         sub.inbox,
@@ -428,7 +428,7 @@ func (sub *subscription) closeOrUnsubscribe(doClose bool) error {
 	sc.Unlock()
 
 	usr := &pb.UnsubscribeRequest{
-		ClientID: sc.clientID,
+		ClientID: sc.opts.ClientID,
 		Subject:  sub.subject,
 		Inbox:    sub.ackInbox,
 	}
