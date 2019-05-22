@@ -169,16 +169,24 @@ type Options struct {
 	ConnectionLostCB ConnectionLostHandler
 }
 
-// DefaultOptions are the NATS Streaming client's default options
-var DefaultOptions = Options{
-	NatsURL:            DefaultNatsURL,
-	ConnectTimeout:     DefaultConnectWait,
-	AckTimeout:         DefaultAckWait,
-	DiscoverPrefix:     DefaultDiscoverPrefix,
-	MaxPubAcksInflight: DefaultMaxPubAcksInflight,
-	PingIterval:        DefaultPingInterval,
-	PingMaxOut:         DefaultPingMaxOut,
+// GetDefaultOptions returns default configuration options for the client.
+func GetDefaultOptions() Options {
+	return Options{
+		NatsURL:            DefaultNatsURL,
+		ConnectTimeout:     DefaultConnectWait,
+		AckTimeout:         DefaultAckWait,
+		DiscoverPrefix:     DefaultDiscoverPrefix,
+		MaxPubAcksInflight: DefaultMaxPubAcksInflight,
+		PingIterval:        DefaultPingInterval,
+		PingMaxOut:         DefaultPingMaxOut,
+	}
 }
+
+// DEPRECATED: Use GetDefaultOptions() instead.
+// DefaultOptions is not safe for use by multiple clients.
+// For details see https://github.com/nats-io/nats.go/issues/308.
+// DefaultOptions are the NATS Streaming client's default options
+var DefaultOptions = GetDefaultOptions()
 
 // Option is a function on the options for a connection.
 type Option func(*Options) error
