@@ -156,9 +156,12 @@ type Options struct {
 	// calls block.
 	MaxPubAcksInflight int
 
+	// DEPRECATED: Please use PingInterval instead
+	PingIterval int
+
 	// PingInterval is the interval at which client sends PINGs to the server
 	// to detect the loss of a connection.
-	PingIterval int
+	PingInterval int
 
 	// PingMaxOut specifies the maximum number of PINGs without a corresponding
 	// PONG before declaring the connection permanently lost.
@@ -177,7 +180,7 @@ func GetDefaultOptions() Options {
 		AckTimeout:         DefaultAckWait,
 		DiscoverPrefix:     DefaultDiscoverPrefix,
 		MaxPubAcksInflight: DefaultMaxPubAcksInflight,
-		PingIterval:        DefaultPingInterval,
+		PingInterval:       DefaultPingInterval,
 		PingMaxOut:         DefaultPingMaxOut,
 	}
 }
@@ -254,7 +257,7 @@ func Pings(interval, maxOut int) Option {
 				return fmt.Errorf("invalid ping values: interval=%v (min>0) maxOut=%v (min=2)", interval, maxOut)
 			}
 		}
-		o.PingIterval = interval
+		o.PingInterval = interval
 		o.PingMaxOut = maxOut
 		return nil
 	}
@@ -367,7 +370,7 @@ func Connect(stanClusterID, clientID string, options ...Option) (Conn, error) {
 		HeartbeatInbox: hbInbox,
 		ConnID:         c.connID,
 		Protocol:       protocolOne,
-		PingInterval:   int32(c.opts.PingIterval),
+		PingInterval:   int32(c.opts.PingInterval),
 		PingMaxOut:     int32(c.opts.PingMaxOut),
 	}
 	b, _ := req.Marshal()
