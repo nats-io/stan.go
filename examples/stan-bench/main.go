@@ -1,4 +1,4 @@
-// Copyright 2016-2018 The NATS Authors
+// Copyright 2016-2019 The NATS Authors
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -18,7 +18,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -31,17 +30,17 @@ import (
 // Some sane defaults
 const (
 	DefaultNumMsgs            = 100000
-	DefaultNumPubs            = 1
+	DefaultNumPubs            = 10
 	DefaultNumSubs            = 0
-	DefaultAsync              = false
+	DefaultSync               = false
 	DefaultMessageSize        = 128
 	DefaultIgnoreOld          = false
-	DefaultMaxPubAcksInflight = 1000
+	DefaultMaxPubAcksInflight = 512
 	DefaultClientID           = "benchmark"
 )
 
 func usage() {
-	log.Fatalf("Usage: stan-bench [-s server (%s)] [-tls] [-c CLUSTER_ID] [-id CLIENT_ID] [-qgroup QUEUE_GROUP_NAME] [-np NUM_PUBLISHERS] [-ns NUM_SUBSCRIBERS] [-n NUM_MSGS] [-ms MESSAGE_SIZE] [-csv csvfile] [-mpa MAX_NUMBER_OF_PUBLISHED_ACKS_INFLIGHT] [-io] [-a] <subject>\n", nats.DefaultURL)
+	log.Fatalf("Usage: stan-bench [-s server (%s)] [-c CLUSTER_ID] [-id CLIENT_ID] [-qgroup QUEUE_GROUP_NAME] [-np NUM_PUBLISHERS] [-ns NUM_SUBSCRIBERS] [-n NUM_MSGS] [-ms MESSAGE_SIZE] [-csv csvfile] [-mpa MAX_NUMBER_OF_PUBLISHED_ACKS_INFLIGHT] [-io] [-sync] [--creds credentials_file] <subject>\n", nats.DefaultURL)
 }
 
 var (
@@ -56,17 +55,17 @@ func main() {
 	flag.StringVar(&clusterID, "cluster", "test-cluster", "The NATS Streaming cluster ID")
 
 	var urls = flag.String("s", nats.DefaultURL, "The NATS server URLs (separated by comma")
-	var tls = flag.Bool("tls", false, "Use TLS secure sonnection")
 	var numPubs = flag.Int("np", DefaultNumPubs, "Number of concurrent publishers")
 	var numSubs = flag.Int("ns", DefaultNumSubs, "Number of concurrent subscribers")
 	var numMsgs = flag.Int("n", DefaultNumMsgs, "Number of messages to publish")
-	var async = flag.Bool("a", DefaultAsync, "Async message publishing")
+	var syncPub = flag.Bool("sync", DefaultSync, "Sync message publishing")
 	var messageSize = flag.Int("ms", DefaultMessageSize, "Message size in bytes.")
 	var ignoreOld = flag.Bool("io", DefaultIgnoreOld, "Subscribers ignore old messages")
 	var maxPubAcks = flag.Int("mpa", DefaultMaxPubAcksInflight, "Max number of published acks in flight")
 	var clientID = flag.String("id", DefaultClientID, "Benchmark process base client ID")
 	var csvFile = flag.String("csv", "", "Save bench data to csv file")
 	var queue = flag.String("qgroup", "", "Queue group name")
+	var userCreds = flag.String("creds", "", "Credentials File")
 
 	log.SetFlags(0)
 	flag.Usage = usage
@@ -77,14 +76,12 @@ func main() {
 		usage()
 	}
 
-	// Setup the option block
-	opts := nats.GetDefaultOptions()
-	opts.Servers = strings.Split(*urls, ",")
-	for i, s := range opts.Servers {
-		opts.Servers[i] = strings.Trim(s, " ")
+	// Setup the connect options
+	opts := []nats.Option{nats.Name("NATS Streaming Benchmark")}
+	// Use UserCredentials
+	if *userCreds != "" {
+		opts = append(opts, nats.UserCredentials(*userCreds))
 	}
-
-	opts.Secure = *tls
 
 	benchmark = bench.NewBenchmark("NATS Streaming", *numSubs, *numPubs)
 
@@ -100,7 +97,7 @@ func main() {
 	startwg.Add(*numSubs)
 	for i := 0; i < *numSubs; i++ {
 		subID := fmt.Sprintf("%s-sub-%d", *clientID, i)
-		go runSubscriber(&startwg, &donewg, opts, clusterID, subID, *queue, *numMsgs, *messageSize, *ignoreOld)
+		go runSubscriber(&startwg, &donewg, *urls, opts, clusterID, subID, *queue, *numMsgs, *messageSize, *ignoreOld)
 	}
 	startwg.Wait()
 
@@ -109,7 +106,7 @@ func main() {
 	pubCounts := bench.MsgsPerClient(*numMsgs, *numPubs)
 	for i := 0; i < *numPubs; i++ {
 		pubID := fmt.Sprintf("%s-pub-%d", *clientID, i)
-		go runPublisher(&startwg, &donewg, opts, clusterID, pubCounts[i], *messageSize, *async, pubID, *maxPubAcks)
+		go runPublisher(&startwg, &donewg, *urls, opts, clusterID, pubCounts[i], *messageSize, *syncPub, pubID, *maxPubAcks)
 	}
 
 	log.Printf("Starting benchmark [msgs=%d, msgsize=%d, pubs=%d, subs=%d]\n", *numMsgs, *messageSize, *numPubs, *numSubs)
@@ -127,8 +124,8 @@ func main() {
 	}
 }
 
-func runPublisher(startwg, donewg *sync.WaitGroup, opts nats.Options, clusterID string, numMsgs int, msgSize int, async bool, pubID string, maxPubAcksInflight int) {
-	nc, err := opts.Connect()
+func runPublisher(startwg, donewg *sync.WaitGroup, url string, opts []nats.Option, clusterID string, numMsgs, msgSize int, sync bool, pubID string, maxPubAcksInflight int) {
+	nc, err := nats.Connect(url, opts...)
 	if err != nil {
 		log.Fatalf("Publisher %s can't connect: %v\n", pubID, err)
 	}
@@ -152,7 +149,7 @@ func runPublisher(startwg, donewg *sync.WaitGroup, opts nats.Options, clusterID 
 	published := 0
 	start := time.Now()
 
-	if async {
+	if !sync {
 		ch := make(chan bool)
 		acb := func(lguid string, err error) {
 			if err != nil {
@@ -186,8 +183,8 @@ func runPublisher(startwg, donewg *sync.WaitGroup, opts nats.Options, clusterID 
 	donewg.Done()
 }
 
-func runSubscriber(startwg, donewg *sync.WaitGroup, opts nats.Options, clusterID, subID, queue string, numMsgs, msgSize int, ignoreOld bool) {
-	nc, err := opts.Connect()
+func runSubscriber(startwg, donewg *sync.WaitGroup, url string, opts []nats.Option, clusterID, subID, queue string, numMsgs, msgSize int, ignoreOld bool) {
+	nc, err := nats.Connect(url, opts...)
 	if err != nil {
 		log.Fatalf("Subscriber %s can't connect: %v\n", subID, err)
 	}

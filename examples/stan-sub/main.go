@@ -1,4 +1,4 @@
-// Copyright 2016-2018 The NATS Authors
+// Copyright 2016-2019 The NATS Authors
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -21,6 +21,7 @@ import (
 	"os/signal"
 	"time"
 
+	nats "github.com/nats-io/nats.go"
 	"github.com/nats-io/stan.go"
 	"github.com/nats-io/stan.go/pb"
 )
@@ -29,19 +30,20 @@ var usageStr = `
 Usage: stan-sub [options] <subject>
 
 Options:
-	-s, --server   <url>            NATS Streaming server URL(s)
-	-c, --cluster  <cluster name>   NATS Streaming cluster name
-	-id,--clientid <client ID>      NATS Streaming client ID
+	-s,  --server   <url>            NATS Streaming server URL(s)
+	-c,  --cluster  <cluster name>   NATS Streaming cluster name
+	-id, --clientid <client ID>      NATS Streaming client ID
+	-cr, --creds    <credentials>    NATS 2.0 Credentials
 
 Subscription Options:
-	--qgroup <name>                 Queue group
-	--seq <seqno>                   Start at seqno
-	--all                           Deliver all available messages
-	--last                          Deliver starting with last published message
-	--since <duration>              Deliver messages in last interval (e.g. 1s, 1hr)
-	         (for more information: https://golang.org/pkg/time/#ParseDuration)
-	--durable <name>                Durable subscriber name
-	--unsubscribe                   Unsubscribe the durable on exit
+	--qgroup <name>                  Queue group
+	--all                            Deliver all available messages
+	--last                           Deliver starting with last published message
+	--since  <time_ago>              Deliver messages in last interval (e.g. 1s, 1hr)
+	--seq    <seqno>                 Start at seqno
+	--new_only                       Only deliver new messages
+	--durable <name>                 Durable subscriber name
+	--unsub                          Unsubscribe the durable on exit
 `
 
 // NOTE: Use tls scheme for TLS, e.g. stan-sub -s tls://demo.nats.io:4443 foo
@@ -50,39 +52,44 @@ func usage() {
 }
 
 func printMsg(m *stan.Msg, i int) {
-	log.Printf("[#%d] Received on [%s]: '%s'\n", i, m.Subject, m)
+	log.Printf("[#%d] Received: %s\n", i, m)
 }
 
 func main() {
-	var clusterID string
-	var clientID string
-	var showTime bool
-	var startSeq uint64
-	var startDelta string
-	var deliverAll bool
-	var deliverLast bool
-	var durable string
-	var qgroup string
-	var unsubscribe bool
-	var URL string
-
-	//	defaultID := fmt.Sprintf("client.%s", nuid.Next())
+	var (
+		clusterID, clientID string
+		URL                 string
+		userCreds           string
+		showTime            bool
+		qgroup              string
+		unsubscribe         bool
+		startSeq            uint64
+		startDelta          string
+		deliverAll          bool
+		newOnly             bool
+		deliverLast         bool
+		durable             string
+	)
 
 	flag.StringVar(&URL, "s", stan.DefaultNatsURL, "The nats server URLs (separated by comma)")
 	flag.StringVar(&URL, "server", stan.DefaultNatsURL, "The nats server URLs (separated by comma)")
 	flag.StringVar(&clusterID, "c", "test-cluster", "The NATS Streaming cluster ID")
 	flag.StringVar(&clusterID, "cluster", "test-cluster", "The NATS Streaming cluster ID")
-	flag.StringVar(&clientID, "id", "", "The NATS Streaming client ID to connect with")
-	flag.StringVar(&clientID, "clientid", "", "The NATS Streaming client ID to connect with")
+	flag.StringVar(&clientID, "id", "stan-sub", "The NATS Streaming client ID to connect with")
+	flag.StringVar(&clientID, "clientid", "stan-sub", "The NATS Streaming client ID to connect with")
 	flag.BoolVar(&showTime, "t", false, "Display timestamps")
 	// Subscription options
 	flag.Uint64Var(&startSeq, "seq", 0, "Start at sequence no.")
-	flag.BoolVar(&deliverAll, "all", false, "Deliver all")
+	flag.BoolVar(&deliverAll, "all", true, "Deliver all")
+	flag.BoolVar(&newOnly, "new_only", false, "Only new messages")
 	flag.BoolVar(&deliverLast, "last", false, "Start with last value")
 	flag.StringVar(&startDelta, "since", "", "Deliver messages since specified time offset")
 	flag.StringVar(&durable, "durable", "", "Durable subscriber name")
-	flag.StringVar(&qgroup, "qgroup", "", "Queue group name")
+	flag.StringVar(&qgroup, "qgroup", "stan", "Queue group name")
+	flag.BoolVar(&unsubscribe, "unsub", false, "Unsubscribe the durable on exit")
 	flag.BoolVar(&unsubscribe, "unsubscribe", false, "Unsubscribe the durable on exit")
+	flag.StringVar(&userCreds, "cr", "", "Credentials File")
+	flag.StringVar(&userCreds, "creds", "", "Credentials File")
 
 	log.SetFlags(0)
 	flag.Usage = usage
@@ -90,16 +97,26 @@ func main() {
 
 	args := flag.Args()
 
-	if clientID == "" {
-		log.Printf("Error: A unique client ID must be specified.")
-		usage()
-	}
 	if len(args) < 1 {
 		log.Printf("Error: A subject must be specified.")
 		usage()
 	}
 
-	sc, err := stan.Connect(clusterID, clientID, stan.NatsURL(URL),
+	// Connect Options.
+	opts := []nats.Option{nats.Name("NATS Streaming Example Subscriber")}
+	// Use UserCredentials
+	if userCreds != "" {
+		opts = append(opts, nats.UserCredentials(userCreds))
+	}
+
+	// Connect to NATS
+	nc, err := nats.Connect(URL, opts...)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer nc.Close()
+
+	sc, err := stan.Connect(clusterID, clientID, stan.NatsConn(nc),
 		stan.SetConnectionLostHandler(func(_ stan.Conn, reason error) {
 			log.Fatalf("Connection lost, reason: %v", reason)
 		}))
@@ -108,21 +125,13 @@ func main() {
 	}
 	log.Printf("Connected to %s clusterID: [%s] clientID: [%s]\n", URL, clusterID, clientID)
 
-	subj, i := args[0], 0
-
-	mcb := func(msg *stan.Msg) {
-		i++
-		printMsg(msg, i)
-	}
-
+	// Process Subscriber Options.
 	startOpt := stan.StartAt(pb.StartPosition_NewOnly)
-
 	if startSeq != 0 {
 		startOpt = stan.StartAtSequence(startSeq)
 	} else if deliverLast {
 		startOpt = stan.StartWithLastReceived()
-	} else if deliverAll {
-		log.Print("subscribing with DeliverAllAvailable")
+	} else if deliverAll && !newOnly {
 		startOpt = stan.DeliverAllAvailable()
 	} else if startDelta != "" {
 		ago, err := time.ParseDuration(startDelta)
@@ -131,6 +140,12 @@ func main() {
 			log.Fatal(err)
 		}
 		startOpt = stan.StartAtTimeDelta(ago)
+	}
+
+	subj, i := args[0], 0
+	mcb := func(msg *stan.Msg) {
+		i++
+		printMsg(msg, i)
 	}
 
 	sub, err := sc.QueueSubscribe(subj, qgroup, mcb, startOpt, stan.DurableName(durable))
