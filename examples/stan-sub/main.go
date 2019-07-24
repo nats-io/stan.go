@@ -85,7 +85,7 @@ func main() {
 	flag.BoolVar(&deliverLast, "last", false, "Start with last value")
 	flag.StringVar(&startDelta, "since", "", "Deliver messages since specified time offset")
 	flag.StringVar(&durable, "durable", "", "Durable subscriber name")
-	flag.StringVar(&qgroup, "qgroup", "stan", "Queue group name")
+	flag.StringVar(&qgroup, "qgroup", "", "Queue group name")
 	flag.BoolVar(&unsubscribe, "unsub", false, "Unsubscribe the durable on exit")
 	flag.BoolVar(&unsubscribe, "unsubscribe", false, "Unsubscribe the durable on exit")
 	flag.StringVar(&userCreds, "cr", "", "Credentials File")
