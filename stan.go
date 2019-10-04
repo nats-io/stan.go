@@ -99,7 +99,7 @@ const (
 
 // Errors
 var (
-	ErrConnectReqTimeout = errors.New("stan: connect request timeout")
+	ErrConnectReqTimeout = errors.New("stan: connect request timeout (possibly wrong cluster ID?)")
 	ErrCloseReqTimeout   = errors.New("stan: close request timeout")
 	ErrSubReqTimeout     = errors.New("stan: subscribe request timeout")
 	ErrUnsubReqTimeout   = errors.New("stan: unsubscribe request timeout")
