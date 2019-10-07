@@ -1730,11 +1730,12 @@ func TestSlowAsyncSubscriber(t *testing.T) {
 	})
 	// Make sure these are the defaults
 	pm, pb, _ := sub.PendingLimits()
-	if pm != nats.DefaultSubPendingMsgsLimit {
-		t.Fatalf("Pending limit for number of msgs incorrect, expected %d, got %d\n", nats.DefaultSubPendingMsgsLimit, pm)
+	unlimited := -1
+	if pm != unlimited {
+		t.Fatalf("Pending limit for number of msgs incorrect, expected %d, got %d\n", unlimited, pm)
 	}
-	if pb != nats.DefaultSubPendingBytesLimit {
-		t.Fatalf("Pending limit for number of bytes incorrect, expected %d, got %d\n", nats.DefaultSubPendingBytesLimit, pb)
+	if pb != unlimited {
+		t.Fatalf("Pending limit for number of bytes incorrect, expected %d, got %d\n", unlimited, pb)
 	}
 
 	// Set new limits

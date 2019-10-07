@@ -257,6 +257,7 @@ func (sc *conn) subscribe(subject, qgroup string, cb MsgHandler, options ...Subs
 	if err != nil {
 		return nil, err
 	}
+	nsub.SetPendingLimits(-1, -1)
 	sub.inboxSub = nsub
 
 	// Create a subscription request
