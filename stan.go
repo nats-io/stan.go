@@ -253,7 +253,7 @@ func Pings(interval, maxOut int) Option {
 		// by the library as milliseconds. If this test boolean is set,
 		// do not check values.
 		if !testAllowMillisecInPings {
-			if interval < 1 || maxOut <= 2 {
+			if interval < 1 || maxOut < 2 {
 				return fmt.Errorf("invalid ping values: interval=%v (min>0) maxOut=%v (min=2)", interval, maxOut)
 			}
 		}
