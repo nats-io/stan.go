@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package stan is a Go client for the NATS Streaming messaging system (https://nats.io).
 package stan
 
 import (
@@ -40,6 +39,7 @@ type Msg struct {
 
 // Subscription represents a subscription within the NATS Streaming cluster. Subscriptions
 // will be rate matched and follow at-least once delivery semantics.
+// The subscription is safe to use in multiple Go routines concurrently.
 type Subscription interface {
 	// Unsubscribe removes interest in the subscription.
 	// For durables, it means that the durable interest is also removed from
