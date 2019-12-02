@@ -1565,7 +1565,7 @@ func TestNatsURLOption(t *testing.T) {
 	s := RunServer(clusterName)
 	defer s.Shutdown()
 
-	sc, err := Connect(clusterName, clientName, NatsURL("nats://localhost:5555"))
+	sc, err := Connect(clusterName, clientName, NatsURL("nats://127.0.0.1:5555"))
 	if err == nil {
 		sc.Close()
 		t.Fatal("Expected connect to fail")

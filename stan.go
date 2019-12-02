@@ -30,7 +30,7 @@ const Version = "0.5.0"
 
 const (
 	// DefaultNatsURL is the default URL the client connects to
-	DefaultNatsURL = "nats://localhost:4222"
+	DefaultNatsURL = "nats://127.0.0.1:4222"
 	// DefaultConnectWait is the default timeout used for the connect operation
 	DefaultConnectWait = 2 * time.Second
 	// DefaultDiscoverPrefix is the prefix subject used to connect to the NATS Streaming server
