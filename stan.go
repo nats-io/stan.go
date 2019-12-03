@@ -48,6 +48,7 @@ const (
 
 // Conn represents a connection to the NATS Streaming subsystem. It can Publish and
 // Subscribe to messages within the NATS Streaming cluster.
+// The connection is safe to use in multiple Go routines concurrently.
 type Conn interface {
 	// Publish will publish to the cluster and wait for an ACK.
 	Publish(subject string, data []byte) error
