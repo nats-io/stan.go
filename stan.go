@@ -26,7 +26,7 @@ import (
 )
 
 // Version is the NATS Streaming Go Client version
-const Version = "0.5.0"
+const Version = "0.5.2"
 
 const (
 	// DefaultNatsURL is the default URL the client connects to
