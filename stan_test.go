@@ -2207,9 +2207,9 @@ func TestPings(t *testing.T) {
 	// Check that connection is closed.
 	c := sc.(*conn)
 	c.RLock()
-	c.pingMu.Lock()
-	timerIsNil := c.pingTimer == nil
-	c.pingMu.Unlock()
+	c.ping.mu.Lock()
+	timerIsNil := c.ping.timer == nil
+	c.ping.mu.Unlock()
 	c.RUnlock()
 	if !timerIsNil {
 		t.Fatalf("Expected timer to be nil")
