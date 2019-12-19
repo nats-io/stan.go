@@ -292,6 +292,9 @@ type conn struct {
 	pubAckMap        map[string]*ack
 	pubAckChan       chan (struct{})
 	pubAckCloseChan  chan (struct{})
+	pubAckTimeoutCh  chan (struct{})
+	pubAckHead       *ack
+	pubAckTail       *ack
 	opts             Options
 	nc               *nats.Conn
 	ncOwned          bool       // NATS Streaming created the connection, so needs to close it.
@@ -299,6 +302,7 @@ type conn struct {
 	connLostCB       ConnectionLostHandler
 	closed           bool
 	ping             pingInfo
+	wg               sync.WaitGroup
 }
 
 // Holds all field related to the client-to-server pings
@@ -316,22 +320,26 @@ type pingInfo struct {
 
 // Closure for ack contexts.
 type ack struct {
-	t  *time.Timer
-	ah AckHandler
-	ch chan error
+	ah     AckHandler
+	ch     chan error
+	guid   string
+	expire int64
+	prev   *ack
+	next   *ack
 }
 
 // Connect will form a connection to the NATS Streaming subsystem.
 // Note that clientID can contain only alphanumeric and `-` or `_` characters.
 func Connect(stanClusterID, clientID string, options ...Option) (Conn, error) {
 	// Process Options
-	c := conn{
+	c := &conn{
 		clientID:        clientID,
 		opts:            DefaultOptions,
 		connID:          []byte(nuid.Next()),
 		pubNUID:         nuid.New(),
 		pubAckMap:       make(map[string]*ack),
 		pubAckCloseChan: make(chan struct{}),
+		pubAckTimeoutCh: make(chan struct{}, 1),
 		subMap:          make(map[string]*subscription),
 	}
 	for _, opt := range options {
@@ -433,6 +441,10 @@ func Connect(stanClusterID, clientID string, options ...Option) (Conn, error) {
 	// Capture the connection error cb
 	c.connLostCB = c.opts.ConnectionLostCB
 
+	// Start the routine that will timeout the publish calls.
+	c.wg.Add(1)
+	go c.pubAckTimeout()
+
 	unsubPingSub := true
 	// Do this with servers which are at least at protocolOne.
 	if cr.Protocol >= protocolOne {
@@ -470,7 +482,7 @@ func Connect(stanClusterID, clientID string, options ...Option) (Conn, error) {
 		p.sub = nil
 	}
 
-	return &c, nil
+	return c, nil
 }
 
 // Invoked on a failed connect.
@@ -590,18 +602,9 @@ func (sc *conn) cleanupOnClose(err error) {
 		}
 	}
 
-	// Fail all pending pubs
-	for guid, pubAck := range sc.pubAckMap {
-		delete(sc.pubAckMap, guid)
-		if pubAck.t != nil {
-			pubAck.t.Stop()
-		}
-		if pubAck.ah != nil {
-			pubAck.ah(guid, err)
-		} else if pubAck.ch != nil {
-			pubAck.ch <- err
-		}
-	}
+	// Let the pubAckTimeout routine fail the pubAcks..
+	sc.signalPubAckTimeoutCh()
+
 	// Prevent publish calls that have passed the connection close check but
 	// not yet send to pubAckChan to be possibly blocked.
 	close(sc.pubAckCloseChan)
@@ -610,12 +613,15 @@ func (sc *conn) cleanupOnClose(err error) {
 // Close a connection to the stan system.
 func (sc *conn) Close() error {
 	sc.Lock()
-	defer sc.Unlock()
-
 	if sc.closed {
+		sc.Unlock()
 		// We are already closed.
 		return nil
 	}
+	defer func() {
+		sc.Unlock()
+		sc.wg.Wait()
+	}()
 	// Signals we are closed.
 	sc.closed = true
 
@@ -676,7 +682,9 @@ func (sc *conn) processAck(m *nats.Msg) {
 	}
 
 	// Remove
-	a := sc.removeAck(pa.Guid)
+	sc.Lock()
+	a := sc.removeAck(pa.Guid, true)
+	sc.Unlock()
 	if a != nil {
 		// Capture error if it exists.
 		if pa.Error != "" {
@@ -732,7 +740,6 @@ func (sc *conn) publishAsync(subject string, data []byte, ah AckHandler, ch chan
 	sc.pubAckMap[peGUID] = a
 	// snapshot
 	ackSubject := sc.ackSubject
-	ackTimeout := sc.opts.AckTimeout
 	sc.Unlock()
 
 	// Use the buffered channel to control the number of outstanding acks.
@@ -755,60 +762,41 @@ func (sc *conn) publishAsync(subject string, data []byte, ah AckHandler, ch chan
 	// Setup the timer for expiration.
 	sc.Lock()
 	if err != nil || sc.closed {
-		sc.Unlock()
 		// If we got and error on publish or the connection has been closed,
 		// we need to return an error only if:
 		// - we can remove the pubAck from the map
 		// - we can't, but this is an async pub with no provided AckHandler
-		removed := sc.removeAck(peGUID) != nil
+		removed := sc.removeAck(peGUID, true) != nil
 		if removed || (ch == nil && ah == nil) {
 			if err == nil {
 				err = ErrConnectionClosed
 			}
-			return "", err
 		}
-		// pubAck was removed from cleanupOnClose() and error will be sent
+		// else pubAck was removed from cleanupOnClose() and error will be sent
 		// to appropriate go channel (ah or ch).
-		return peGUID, nil
+	} else {
+		a.guid = peGUID
+		a.expire = time.Now().Add(sc.opts.AckTimeout).UnixNano()
+		sc.appendPubAckToList(a)
 	}
-	a.t = time.AfterFunc(ackTimeout, func() {
-		pubAck := sc.removeAck(peGUID)
-		// processAck could get here before and handle the ack.
-		// If that's the case, we would get nil here and simply return.
-		if pubAck == nil {
-			return
-		}
-		if pubAck.ah != nil {
-			pubAck.ah(peGUID, ErrTimeout)
-		} else if a.ch != nil {
-			pubAck.ch <- ErrTimeout
-		}
-	})
 	sc.Unlock()
 
-	return peGUID, nil
+	return peGUID, err
 }
 
-// removeAck removes the ack from the pubAckMap and cancels any state, e.g. timers
-func (sc *conn) removeAck(guid string) *ack {
-	var t *time.Timer
-	sc.Lock()
+// Removes the ack from the pubAckMap and possibly from the list.
+// Lock held on entry.
+func (sc *conn) removeAck(guid string, removeFromList bool) *ack {
 	a := sc.pubAckMap[guid]
 	if a != nil {
-		t = a.t
 		delete(sc.pubAckMap, guid)
+		if removeFromList {
+			sc.removePubAckFromList(a)
+		}
 	}
-	pac := sc.pubAckChan
-	sc.Unlock()
-
-	// Cancel timer if needed.
-	if t != nil {
-		t.Stop()
-	}
-
 	// Remove from channel to unblock PublishAsync
-	if a != nil && len(pac) > 0 {
-		<-pac
+	if a != nil && len(sc.pubAckChan) > 0 {
+		<-sc.pubAckChan
 	}
 	return a
 }
@@ -856,5 +844,142 @@ func (sc *conn) processMsg(raw *nats.Msg) {
 		// FIXME(dlc) - Async error handler? Retry?
 		// sc.nc is immutable and never nil once connection is created.
 		sc.nc.Publish(ackSubject, b)
+	}
+}
+
+// Append the pub ack to the list and signal the timeout routine if this was the first.
+// Lock held on entry.
+func (sc *conn) appendPubAckToList(a *ack) {
+	if sc.pubAckTail != nil {
+		a.prev = sc.pubAckTail
+		a.prev.next = a
+		sc.pubAckTail = a
+	} else {
+		sc.pubAckHead, sc.pubAckTail = a, a
+		sc.signalPubAckTimeoutCh()
+	}
+}
+
+// Signals the pubAckTimeout channel.
+func (sc *conn) signalPubAckTimeoutCh() {
+	select {
+	case sc.pubAckTimeoutCh <- struct{}{}:
+	default:
+	}
+}
+
+// Remove the pub ack from the list and signal the timeout routine if it was
+// the head of the list.
+// Lock held on entry.
+func (sc *conn) removePubAckFromList(a *ack) {
+	if a.prev != nil {
+		a.prev.next = a.next
+	}
+	if a.next != nil {
+		a.next.prev = a.prev
+	}
+	if a == sc.pubAckTail {
+		sc.pubAckTail = a.prev
+	}
+	if a == sc.pubAckHead {
+		sc.pubAckHead = a.next
+		sc.signalPubAckTimeoutCh()
+	}
+}
+
+// Long-lived go routine that deals with publish ack timeouts.
+func (sc *conn) pubAckTimeout() {
+	defer sc.wg.Done()
+
+	var (
+		list        *ack
+		closed      bool
+		dur         time.Duration
+		t           = time.NewTimer(time.Hour)
+		errToReport = ErrTimeout
+	)
+	for {
+		sc.Lock()
+		list = sc.pubAckHead
+		if sc.closed {
+			closed = true
+			errToReport = ErrConnectionClosed
+		} else {
+			now := time.Now().UnixNano()
+			if list != nil {
+				dur = time.Duration(list.expire - now)
+				if dur < 0 {
+					dur = 0
+				}
+			} else {
+				// Any big value would do...
+				dur = time.Hour
+			}
+		}
+		sc.Unlock()
+
+		if !closed {
+			if dur > 0 {
+				t.Reset(dur)
+				// If the head of the list is removed in processAck, we should
+				// be notified through pubAckTimeoutCh and will get back to
+				// compute the new duration.
+				select {
+				case <-sc.pubAckTimeoutCh:
+					continue
+				case <-t.C:
+					// Nothing to do, go back to top of loop to refresh list..
+					if list == nil {
+						continue
+					}
+				}
+			}
+			// We have expired pub acks at this point..
+			sc.Lock()
+			var a *ack
+			now := time.Now().UnixNano()
+			for a = list; a != nil; a = a.next {
+				if a.expire-now > int64(time.Millisecond) {
+					// This element expires in more than 1ms from now,
+					// so stop and end the list prior to this element.
+					if a != sc.pubAckHead {
+						a.prev.next = nil
+						a.prev = nil
+						sc.pubAckHead = a
+					}
+					break
+				}
+			}
+			// If all elements are expired, reset the connection's list.
+			if a == nil {
+				sc.pubAckHead, sc.pubAckTail = nil, nil
+			}
+			sc.Unlock()
+		}
+
+		var next *ack
+		for a := list; a != nil; {
+			// Remove the ack from the map.
+			sc.Lock()
+			removed := sc.removeAck(a.guid, false) != nil
+			next = a.next
+			sc.Unlock()
+			// If processAck has already processed the ack, we would not
+			// have been able to remove from the map, so move to the next.
+			if !removed {
+				a = next
+				continue
+			}
+			if a.ah != nil {
+				a.ah(a.guid, errToReport)
+			} else if a.ch != nil {
+				a.ch <- errToReport
+			}
+			a = next
+		}
+
+		if closed {
+			return
+		}
 	}
 }
