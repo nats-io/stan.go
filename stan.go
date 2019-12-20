@@ -591,15 +591,29 @@ func (sc *conn) cleanupOnClose(err error) {
 	}
 
 	// Fail all pending pubs
-	for guid, pubAck := range sc.pubAckMap {
-		delete(sc.pubAckMap, guid)
-		if pubAck.t != nil {
-			pubAck.t.Stop()
+	if len(sc.pubAckMap) > 0 {
+		// Collect only the ones that have a timer that can be stopped.
+		// All others will be handled either in publishAsync() or their
+		// timer has already fired.
+		acks := map[string]*ack{}
+		for guid, pubAck := range sc.pubAckMap {
+			if pubAck.t != nil && pubAck.t.Stop() {
+				delete(sc.pubAckMap, guid)
+				acks[guid] = pubAck
+			}
 		}
-		if pubAck.ah != nil {
-			pubAck.ah(guid, err)
-		} else if pubAck.ch != nil {
-			pubAck.ch <- err
+		// If we collected any, start a go routine that will do the job.
+		// We can't do it in place in case user's ackHandler uses the connection.
+		if len(acks) > 0 {
+			go func() {
+				for guid, a := range acks {
+					if a.ah != nil {
+						a.ah(guid, ErrConnectionClosed)
+					} else if a.ch != nil {
+						a.ch <- ErrConnectionClosed
+					}
+				}
+			}()
 		}
 	}
 	// Prevent publish calls that have passed the connection close check but
