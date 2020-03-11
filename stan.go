@@ -1,4 +1,4 @@
-// Copyright 2016-2019 The NATS Authors
+// Copyright 2016-2020 The NATS Authors
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -174,6 +174,11 @@ type Options struct {
 }
 
 // GetDefaultOptions returns default configuration options for the client.
+// Do not use this as a library client.
+// This is intended to be used within the library; its visibility to clients is
+// a design wart which we can't remove without breaking API compatibility.
+// Instead, the Connect() function accepts Option parameters, each singular,
+// which are the exposed interface.
 func GetDefaultOptions() Options {
 	return Options{
 		NatsURL:            DefaultNatsURL,
@@ -186,7 +191,8 @@ func GetDefaultOptions() Options {
 	}
 }
 
-// DEPRECATED: Use GetDefaultOptions() instead.
+// DEPRECATED: Use GetDefaultOptions() instead in the library, neither in
+// clients.
 // DefaultOptions is not safe for use by multiple clients.
 // For details see https://github.com/nats-io/nats.go/issues/308.
 // DefaultOptions are the NATS Streaming client's default options
