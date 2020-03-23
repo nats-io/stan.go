@@ -174,12 +174,18 @@ type Options struct {
 }
 
 // GetDefaultOptions returns default configuration options for the client.
-// Do not use this as a library client.
+//
+// Deprecated: do not use this from outside the library.
 // This is intended to be used within the library; its visibility to clients is
 // a design wart which we can't remove without breaking API compatibility.
 // Instead, the Connect() function accepts Option parameters, each singular,
 // which are the exposed interface.
 func GetDefaultOptions() Options {
+	return getDefaultOptions()
+}
+
+// getDefaultOptions returns default configuration options for the client.
+func getDefaultOptions() Options {
 	return Options{
 		NatsURL:            DefaultNatsURL,
 		ConnectTimeout:     DefaultConnectWait,
@@ -191,12 +197,12 @@ func GetDefaultOptions() Options {
 	}
 }
 
-// DEPRECATED: Use GetDefaultOptions() instead in the library, neither in
+// DEPRECATED: Use getDefaultOptions() instead in the library, neither in
 // clients.
 // DefaultOptions is not safe for use by multiple clients.
 // For details see https://github.com/nats-io/nats.go/issues/308.
 // DefaultOptions are the NATS Streaming client's default options
-var DefaultOptions = GetDefaultOptions()
+var DefaultOptions = getDefaultOptions()
 
 // Option is a function on the options for a connection.
 type Option func(*Options) error
@@ -329,11 +335,13 @@ type ack struct {
 
 // Connect will form a connection to the NATS Streaming subsystem.
 // Note that clientID can contain only alphanumeric and `-` or `_` characters.
+// The default options are those returned by GetDefaultOptions and each option
+// specified in a parameter here overrides those defaults.
 func Connect(stanClusterID, clientID string, options ...Option) (Conn, error) {
 	// Process Options
 	c := conn{
 		clientID:        clientID,
-		opts:            DefaultOptions,
+		opts:            getDefaultOptions(),
 		connID:          []byte(nuid.Next()),
 		pubNUID:         nuid.New(),
 		pubAckMap:       make(map[string]*ack),
