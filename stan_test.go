@@ -2615,7 +2615,7 @@ func TestNoMemoryLeak(t *testing.T) {
 		runtime.ReadMemStats(&newMem)
 		newInUse = newMem.HeapInuse
 
-		if newInUse-oldInUse <= 5*oneMB {
+		if newInUse < oldInUse || newInUse-oldInUse <= 5*oneMB {
 			return
 		}
 		time.Sleep(15 * time.Millisecond)
