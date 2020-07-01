@@ -14,16 +14,22 @@
 package main
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
+	"path/filepath"
+	"sort"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/bench"
+
 	"github.com/nats-io/stan.go"
 )
 
@@ -40,7 +46,7 @@ const (
 )
 
 func usage() {
-	log.Fatalf("Usage: stan-bench [-s server (%s)] [-c CLUSTER_ID] [-id CLIENT_ID] [-qgroup QUEUE_GROUP_NAME] [-np NUM_PUBLISHERS] [-ns NUM_SUBSCRIBERS] [-n NUM_MSGS] [-ms MESSAGE_SIZE] [-csv csvfile] [-mpa MAX_NUMBER_OF_PUBLISHED_ACKS_INFLIGHT] [-io] [-sync] [--creds credentials_file] <subject>\n", nats.DefaultURL)
+	log.Fatalf("Usage: stan-bench [-s server (%s)] [-c CLUSTER_ID] [-id CLIENT_ID] [-qgroup QUEUE_GROUP_NAME] [-np NUM_PUBLISHERS] [-ns NUM_SUBSCRIBERS] [-n NUM_MSGS] [-ms MESSAGE_SIZE] [-csv csvfile] [-mpa MAX_NUMBER_OF_PUBLISHED_ACKS_INFLIGHT] [-io] [-sync] [--creds credentials_file] [-cd PATH_TO_CERTS] [-cf CERTIFICATE_FILE] [-ck CERTIFICATE_KEY] [-u USERID] [-pw PASSWORD] <subject>\n", nats.DefaultURL)
 }
 
 var (
@@ -48,6 +54,65 @@ var (
 	qTotalRecv int32
 	qSubsLeft  int32
 )
+
+func CreateTlsConfig(dirName string) (*tls.Config, error) {
+
+	caPool := x509.NewCertPool()
+
+	err := AddCertsFromDir(caPool, dirName)
+	if err != nil {
+		return nil, fmt.Errorf("sdding certs failed for dir: %s err: %w", dirName, err)
+	}
+
+	return &tls.Config{
+		RootCAs:    caPool,
+		ClientAuth: tls.RequireAndVerifyClientCert,
+		MinVersion: tls.VersionTLS12,
+	}, nil
+}
+
+func AddCertsFromDir(certPool *x509.CertPool, dirName string) error {
+
+	// read certificate files
+	certificateFiles, err := filepath.Glob(filepath.Join(dirName, "*.pem"))
+	if err != nil {
+		return fmt.Errorf("failed to scan certificate dir \"%s\": %s", dirName, err)
+	}
+	if len(certificateFiles) == 0 {
+		return fmt.Errorf("no pem files found")
+	}
+	sort.Strings(certificateFiles)
+	for _, file := range certificateFiles {
+		err := AddCertFromFile(certPool, file)
+		if err != nil {
+			return fmt.Errorf("common(tls): %w", err)
+		}
+	}
+
+	return nil
+}
+
+func AddCertFromFile(certPool *x509.CertPool, file string) error {
+	if len(file) == 0 {
+		return fmt.Errorf("invalid file name")
+	}
+
+	if strings.HasSuffix(file, ".pem") == false {
+		return fmt.Errorf("cert must be in pem format")
+	}
+
+	raw, err := ioutil.ReadFile(file)
+
+	if err != nil {
+		return fmt.Errorf("failed to read {%s} err: %w", file, err)
+	}
+
+	if ok := certPool.AppendCertsFromPEM(raw); !ok {
+		return fmt.Errorf("failed to append pem {%s}", file)
+	}
+
+	return nil
+}
 
 func main() {
 	var clusterID string
@@ -66,6 +131,16 @@ func main() {
 	var csvFile = flag.String("csv", "", "Save bench data to csv file")
 	var queue = flag.String("qgroup", "", "Queue group name")
 	var userCreds = flag.String("creds", "", "Credentials File")
+	var certDir string
+	flag.StringVar(&certDir, "cd", "", "path to certs to load")
+	var certFile string
+	flag.StringVar(&certFile, "cf", "", "certificate file")
+	var certKey string
+	flag.StringVar(&certKey, "ck", "", "certificate key")
+	var user string
+	flag.StringVar(&user, "u", "", "user id")
+	var pswd string
+	flag.StringVar(&pswd, "pw", "", "password")
 
 	log.SetFlags(0)
 	flag.Usage = usage
@@ -81,6 +156,22 @@ func main() {
 	// Use UserCredentials
 	if *userCreds != "" {
 		opts = append(opts, nats.UserCredentials(*userCreds))
+	}
+
+	// Use BasicAuth
+	if len(user) > 0 && len(pswd) > 0 {
+		opts = append(opts, nats.UserInfo(user, pswd))
+	}
+
+	if strings.Contains(*urls, "tls://") == true {
+		if len(certDir) > 0 {
+			tlsCfg, _ := CreateTlsConfig(certDir)
+			opts = append(opts, nats.Secure(tlsCfg))
+		} else if len(certFile) > 0 && len(certKey) > 0 {
+			opts = append(opts, nats.ClientCert(certFile, certKey))
+		} else {
+			usage()
+		}
 	}
 
 	benchmark = bench.NewBenchmark("NATS Streaming", *numSubs, *numPubs)
