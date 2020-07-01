@@ -18,12 +18,15 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"path/filepath"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/bench"
+
 	"github.com/nats-io/stan.go"
 )
 
@@ -40,7 +43,7 @@ const (
 )
 
 func usage() {
-	log.Fatalf("Usage: stan-bench [-s server (%s)] [-c CLUSTER_ID] [-id CLIENT_ID] [-qgroup QUEUE_GROUP_NAME] [-np NUM_PUBLISHERS] [-ns NUM_SUBSCRIBERS] [-n NUM_MSGS] [-ms MESSAGE_SIZE] [-csv csvfile] [-mpa MAX_NUMBER_OF_PUBLISHED_ACKS_INFLIGHT] [-io] [-sync] [--creds credentials_file] <subject>\n", nats.DefaultURL)
+	log.Fatalf("Usage: stan-bench [-s server (%s)] [-c CLUSTER_ID] [-id CLIENT_ID] [-qgroup QUEUE_GROUP_NAME] [-np NUM_PUBLISHERS] [-ns NUM_SUBSCRIBERS] [-n NUM_MSGS] [-ms MESSAGE_SIZE] [-csv csvfile] [-mpa MAX_NUMBER_OF_PUBLISHED_ACKS_INFLIGHT] [-io] [-sync] [--creds credentials_file] [-cd PATH_TO_CERTS] [-cf CERTIFICATE_FILE] [-ck CERTIFICATE_KEY] [-u USERID] [-pw PASSWORD] <subject>\n", nats.DefaultURL)
 }
 
 var (
@@ -66,6 +69,11 @@ func main() {
 	var csvFile = flag.String("csv", "", "Save bench data to csv file")
 	var queue = flag.String("qgroup", "", "Queue group name")
 	var userCreds = flag.String("creds", "", "Credentials File")
+	var certDir = flag.String("cd", "", "path to certs to load")
+	var certFile = flag.String("cf", "", "certificate file")
+	var certKey = flag.String("ck", "", "certificate key")
+	var user = flag.String("u", "", "user id")
+	var pswd = flag.String("pw", "", "password")
 
 	log.SetFlags(0)
 	flag.Usage = usage
@@ -81,6 +89,22 @@ func main() {
 	// Use UserCredentials
 	if *userCreds != "" {
 		opts = append(opts, nats.UserCredentials(*userCreds))
+	}
+
+	// Use BasicAuth
+	if len(*user) > 0 && len(*pswd) > 0 {
+		opts = append(opts, nats.UserInfo(*user, *pswd))
+	}
+
+	if strings.Contains(*urls, "tls://") {
+		if len(*certDir) > 0 {
+			certificateFiles, _ := filepath.Glob(filepath.Join(*certDir, "*.pem"))
+			opts = append(opts, nats.RootCAs(certificateFiles...))
+		} else if len(*certFile) > 0 && len(*certKey) > 0 {
+			opts = append(opts, nats.ClientCert(*certFile, *certKey))
+		} else {
+			usage()
+		}
 	}
 
 	benchmark = bench.NewBenchmark("NATS Streaming", *numSubs, *numPubs)
