@@ -50,7 +50,7 @@ To solve that, the client sends pings to the server, and if missing enough of th
 
 When that point is reached, the connection **and its subscriptions** are no longer valid and need to be recreated by the user.
 
-The client-to-server PINGs are by default set to pretty aggressive values and should likely be increased in a normal setup. That is, with the default values, the client would not tolerate a server being down/not responding for only 15 seconds or so. Users should adjust the `Pings()` option, deciding how long they are willing to have their application not able to communicate with a server without "knowing" versus declaring the connection lost too sonn (and having to recreate the state: connection and all subscriptions).
+The client-to-server PINGs are by default set to pretty aggressive values and should likely be increased in a normal setup. That is, with the default values, the client would not tolerate a server being down/not responding for only 15 seconds or so. Users should adjust the `Pings()` option, deciding how long they are willing to have their application not able to communicate with a server without "knowing" versus declaring the connection lost too soon (and having to recreate the state: connection and all subscriptions).
 
 ## Basic Usage
 
@@ -313,10 +313,10 @@ Here is how you would specify your own PING values and the callback:
 
     // Send PINGs every 10 seconds, and fail after 5 PINGs without any response.
     sc, err := stan.Connect(clusterName, clientName,
-        stan.Pings(10, 5),    
+        stan.Pings(10, 5),
         stan.SetConnectionLostHandler(func(_ stan.Conn, reason error) {
             log.Fatalf("Connection lost, reason: %v", reason)
-        }))      
+        }))
 ```
 
 Note that the only way to be notified is to set the callback. If the callback is not set, PINGs are still sent and the connection
