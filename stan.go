@@ -700,7 +700,8 @@ func (sc *conn) processAck(m *nats.Msg) {
 	pa := &pb.PubAck{}
 	err := pa.Unmarshal(m.Data)
 	if err != nil {
-		panic(fmt.Errorf("error during ack unmarshal: %v", err))
+		fmt.Printf("error during ack unmarshal: %v\n", err)
+		return
 	}
 
 	// Remove
@@ -846,7 +847,8 @@ func (sc *conn) processMsg(raw *nats.Msg) {
 	msg := &Msg{}
 	err := msg.Unmarshal(raw.Data)
 	if err != nil {
-		panic(fmt.Errorf("error processing unmarshal for msg: %v", err))
+		fmt.Printf("error during message unmarshal: %v\n", err)
+		return
 	}
 	var sub *subscription
 	// Lookup the subscription
