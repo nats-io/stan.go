@@ -43,7 +43,7 @@ const (
 	// DefaultPingInterval is the default interval (in seconds) at which a connection sends a PING to the server
 	DefaultPingInterval = 5
 	// DefaultPingMaxOut is the number of PINGs without a response before the connection is considered lost.
-	DefaultPingMaxOut = 3
+	DefaultPingMaxOut = 88
 )
 
 // Conn represents a connection to the NATS Streaming subsystem. It can Publish and
