@@ -2911,7 +2911,7 @@ func (m *SubscriptionResponse) Unmarshal(dAtA []byte) error {
 			if skippy < 0 {
 				return ErrInvalidLengthProtocol
 			}
-			if (iNdEx + skippy) > l {
+			if (iNdEx+skippy) > l || (iNdEx+skippy) < 0 {
 				return io.ErrUnexpectedEOF
 			}
 			iNdEx += skippy
@@ -3333,6 +3333,9 @@ func skipProtocol(dAtA []byte) (n int, err error) {
 					return 0, err
 				}
 				iNdEx = start + next
+				if iNdEx < 0 {
+					return 0, io.ErrUnexpectedEOF
+				}
 			}
 			return iNdEx, nil
 		case 4:
