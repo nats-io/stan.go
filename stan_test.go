@@ -85,7 +85,15 @@ func TestVersionMatchesTag(t *testing.T) {
 }
 
 func TestNoNats(t *testing.T) {
-	if _, err := Connect("someNonExistentServerID", "myTestClient"); err != nats.ErrNoServers {
+	var errTxt string
+	switch runtime.GOOS {
+	case "windows":
+		errTxt = "i/o timeout"
+	default:
+		errTxt = nats.ErrNoServers.Error()
+	}
+	_, err := Connect("someNonExistentServerID", "myTestClient")
+	if err == nil || !strings.Contains(err.Error(), errTxt) {
 		t.Fatalf("Expected NATS: No Servers err, got %v\n", err)
 	}
 }
@@ -94,14 +102,25 @@ func TestUnreachable(t *testing.T) {
 	s := natsd.RunDefaultServer()
 	defer s.Shutdown()
 
+	nc, err := nats.Connect(nats.DefaultURL)
+	if err != nil {
+		t.Fatalf("Error on connect: %v", err)
+	}
+	defer nc.Close()
+	_, err = nc.Request("no.responders", nil, 50*time.Millisecond)
+	noResponders := err == nats.ErrNoResponders
+	nc.Close()
+
 	// Non-Existent or Unreachable
 	connectTime := 25 * time.Millisecond
 	start := time.Now()
 	if _, err := Connect("someNonExistentServerID", "myTestClient", ConnectWait(connectTime)); err != ErrConnectReqTimeout {
 		t.Fatalf("Expected Unreachable err, got %v\n", err)
 	}
-	if delta := time.Since(start); delta < connectTime {
-		t.Fatalf("Expected to wait at least %v, but only waited %v\n", connectTime, delta)
+	if !noResponders {
+		if delta := time.Since(start); delta < connectTime {
+			t.Fatalf("Expected to wait at least %v, but only waited %v\n", connectTime, delta)
+		}
 	}
 }
 
@@ -1732,6 +1751,7 @@ func TestSlowAsyncSubscriber(t *testing.T) {
 	defer sc.Close()
 
 	nc := sc.NatsConn()
+	nc.SetErrorHandler(func(_ *nats.Conn, _ *nats.Subscription, _ error) {})
 
 	bch := make(chan bool)
 
@@ -2059,6 +2079,8 @@ func TestSubDropped(t *testing.T) {
 
 	sc := NewDefaultConnection(t)
 	defer sc.Close()
+
+	sc.NatsConn().SetErrorHandler(func(_ *nats.Conn, _ *nats.Subscription, _ error) {})
 
 	total := 1000
 	count := 0
@@ -2687,8 +2709,12 @@ func TestSubTimeout(t *testing.T) {
 	nc := sc.NatsConn()
 	scc := sc.(*conn)
 	scc.Lock()
+	subSubj := scc.subRequests
 	subj := scc.subCloseRequests
 	scc.Unlock()
+	if _, err := nc.SubscribeSync(subSubj); err != nil {
+		t.Fatalf("Error on unsubscribe: %v", err)
+	}
 	sub, err := nc.SubscribeSync(subj)
 	if err != nil {
 		t.Fatalf("Error on unsubscribe: %v", err)
