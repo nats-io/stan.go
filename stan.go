@@ -139,6 +139,11 @@ type Options struct {
 	// the supplied NATS connection.
 	NatsConn *nats.Conn
 
+	// NatsOptions is an array of NATS options to configure the NATS connection
+	// that will be created and owned by the library. Note that some options
+	// may be overridden by the library.
+	NatsOptions []nats.Option
+
 	// ConnectTimeout is the timeout for the initial Connect(). This value is also
 	// used for some of the internal request/replies with the cluster.
 	ConnectTimeout time.Duration
@@ -253,6 +258,16 @@ func NatsConn(nc *nats.Conn) Option {
 	}
 }
 
+// NatsOptions is an Option to provide the NATS options that will be used
+// to create the underlying NATS connection to be used by a streaming
+// connection object.
+func NatsOptions(opts ...nats.Option) Option {
+	return func(o *Options) error {
+		o.NatsOptions = append([]nats.Option(nil), opts...)
+		return nil
+	}
+}
+
 // Pings is an Option to set the ping interval and max out values.
 // The interval needs to be at least 1 and represents the number
 // of seconds.
@@ -357,15 +372,22 @@ func Connect(stanClusterID, clientID string, options ...Option) (Conn, error) {
 	c.nc = c.opts.NatsConn
 	// Create a NATS connection if it doesn't exist.
 	if c.nc == nil {
+		nopts := c.opts.NatsOptions
+		nopts = append(nopts, nats.MaxReconnects(-1), nats.ReconnectBufSize(-1))
+		// Set name only if not provided by the user...
+		var do nats.Options
+		for _, o := range nopts {
+			o(&do)
+		}
+		if do.Name == "" {
+			nopts = append(nopts, nats.Name(clientID))
+		}
 		// We will set the max reconnect attempts to -1 (infinite)
 		// and the reconnect buffer to -1 to prevent any buffering
 		// (which may cause a published message to be flushed on
 		// reconnect while the API may have returned an error due
 		// to PubAck timeout.
-		nc, err := nats.Connect(c.opts.NatsURL,
-			nats.Name(clientID),
-			nats.MaxReconnects(-1),
-			nats.ReconnectBufSize(-1))
+		nc, err := nats.Connect(c.opts.NatsURL, nopts...)
 		if err != nil {
 			return nil, err
 		}
