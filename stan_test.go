@@ -2736,3 +2736,28 @@ func TestSubTimeout(t *testing.T) {
 		t.Fatalf("Unexpected sub close request: %+v", req)
 	}
 }
+
+func TestNatsOptions(t *testing.T) {
+	snopts := natsd.DefaultTestOptions
+	snopts.Username = "foo"
+	snopts.Password = "bar"
+	ns := natsd.RunServer(&snopts)
+	defer ns.Shutdown()
+
+	opts := server.GetDefaultOptions()
+	opts.NATSServerURL = "nats://foo:bar@127.0.0.1:4222"
+	opts.ID = clusterName
+	s := runServerWithOpts(opts)
+	defer s.Shutdown()
+
+	sc, err := Connect(clusterName, clientName,
+		NatsOptions(nats.UserInfo("foo", "bar"), nats.Name("test")))
+	if err != nil {
+		t.Fatalf("Error connecting: %v", err)
+	}
+	defer sc.Close()
+
+	if n := sc.NatsConn().Opts.Name; n != "test" {
+		t.Fatalf("Name was not used: %q instead of %q", n, "test")
+	}
+}
