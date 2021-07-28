@@ -137,6 +137,9 @@ type Options struct {
 	// the NATS streaming connection does NOT close this NATS connection.
 	// It is the responsibility of the application to manage the lifetime of
 	// the supplied NATS connection.
+	//
+	// DEPRECATED: Users should provide NATS options through NatsOptions()
+	// instead to configure the underlying NATS connection.
 	NatsConn *nats.Conn
 
 	// NatsOptions is an array of NATS options to configure the NATS connection
@@ -251,6 +254,9 @@ func MaxPubAcksInflight(max int) Option {
 // NatsConn is an Option to set the underlying NATS connection to be used
 // by a streaming connection object. When such option is set, closing the
 // streaming connection does not close the provided NATS connection.
+//
+// DEPRECATED: Users should use NatsOptions instead to configure the
+// underlying NATS Connection created by the Streaming connection.
 func NatsConn(nc *nats.Conn) Option {
 	return func(o *Options) error {
 		o.NatsConn = nc
