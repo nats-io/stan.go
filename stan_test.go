@@ -1008,6 +1008,83 @@ func TestClose(t *testing.T) {
 	}
 }
 
+func TestConnCloseError(t *testing.T) {
+	s := RunServer(clusterName)
+	defer s.Shutdown()
+
+	sc := NewDefaultConnection(t)
+	defer sc.Close()
+
+	nc, err := nats.Connect(nats.DefaultURL)
+	if err != nil {
+		t.Fatalf("Error on connect: %v", err)
+	}
+	defer nc.Close()
+
+	// Alter the close subject so the request fails
+	scc := sc.(*conn)
+	scc.Lock()
+	closeSubj := scc.closeRequests
+	scc.closeRequests = "dummy"
+	scc.Unlock()
+	if err := sc.Close(); err == nil {
+		t.Fatal("Expected error, got none")
+	}
+
+	checkInternalConnClosed := func(expectedClosed bool) {
+		t.Helper()
+		scc.RLock()
+		defer scc.RUnlock()
+		closed := scc.nc.IsClosed()
+		if expectedClosed && !closed {
+			t.Fatalf("Expected internal NATS connection to be closed, but it wasn't")
+		} else if !expectedClosed && closed {
+			t.Fatalf("Expected internal NATS connection to be not be closed, but it was")
+		}
+	}
+	// Internal NATS connection should not have been closed
+	checkInternalConnClosed(false)
+
+	// Now setup a subscription to check if library is sending the close protocol.
+	crsub, err := nc.SubscribeSync(closeSubj)
+	if err != nil {
+		t.Fatalf("Error on subscribe: %v", err)
+	}
+	// Flush since this is a different connection than the one used by sc.
+	nc.Flush()
+
+	// We should be able to call Close() again
+	if err := sc.Close(); err == nil {
+		t.Fatal("Expected error, did not get one")
+	}
+	// Connection still not closed
+	checkInternalConnClosed(false)
+
+	// Fix close subject
+	scc.Lock()
+	scc.closeRequests = closeSubj
+	scc.Unlock()
+	// Now close should work.
+	if err := sc.Close(); err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+	// Now internal connection should have been closed
+	checkInternalConnClosed(true)
+
+	// Check protocol was sent
+	if _, err := crsub.NextMsg(time.Second); err != nil {
+		t.Fatalf("Did not get close protocol: %v", err)
+	}
+	// Now, another call to Close() should just return nil
+	if err := sc.Close(); err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+	// And this time, no protocol should be sent
+	if _, err := crsub.NextMsg(100 * time.Millisecond); err == nil {
+		t.Fatal("Close protocol should not have been sent")
+	}
+}
+
 func TestDoubleClose(t *testing.T) {
 	s := RunServer(clusterName)
 	defer s.Shutdown()
@@ -2734,6 +2811,67 @@ func TestSubTimeout(t *testing.T) {
 	req.Unmarshal(msg.Data)
 	if req.ClientID != clientName || req.Subject != "foo" || req.Inbox == "" {
 		t.Fatalf("Unexpected sub close request: %+v", req)
+	}
+}
+
+func TestSubCloseError(t *testing.T) {
+	s := RunServer(clusterName)
+	defer s.Shutdown()
+
+	sc := NewDefaultConnection(t)
+	defer sc.Close()
+
+	sub, err := sc.Subscribe("foo", func(_ *Msg) {})
+	if err != nil {
+		t.Fatalf("Error on sub: %v", err)
+	}
+
+	nc, err := nats.Connect(nats.DefaultURL)
+	if err != nil {
+		t.Fatalf("Error on connect: ")
+	}
+	defer nc.Close()
+
+	scc := sc.(*conn)
+	scc.Lock()
+	closeSubj := scc.subCloseRequests
+	// alter the subCloseRequests so that the sub close fails
+	scc.subCloseRequests = "dummy"
+	scc.Unlock()
+
+	// Now setup a subscription to check if library is sending the close protocol.
+	crsub, err := nc.SubscribeSync(closeSubj)
+	if err != nil {
+		t.Fatalf("Error on subscribe: %v", err)
+	}
+	// Flush since this is a different connection than the one used by sc.
+	nc.Flush()
+
+	if err := sub.Close(); err == nil {
+		t.Fatal("Expected error, got none")
+	}
+
+	// Fix close subject
+	scc.Lock()
+	scc.subCloseRequests = closeSubj
+	scc.Unlock()
+
+	// Try again, it should work
+	if err := sub.Close(); err != nil {
+		t.Fatalf("Error on close: %v", err)
+	}
+	// Check protocol was sent
+	if _, err := crsub.NextMsg(time.Second); err != nil {
+		t.Fatalf("Did not get close protocol: %v", err)
+	}
+
+	// Now another call to Close() should return BadSubscription
+	if err := sub.Close(); err != ErrBadSubscription {
+		t.Fatalf("Expected %v, got %v", ErrBadSubscription, err)
+	}
+	// And this time, no protocol should be sent
+	if _, err := crsub.NextMsg(100 * time.Millisecond); err == nil {
+		t.Fatal("Close protocol should not have been sent")
 	}
 }
 
