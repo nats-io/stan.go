@@ -1012,7 +1012,10 @@ func TestConnCloseError(t *testing.T) {
 	s := RunServer(clusterName)
 	defer s.Shutdown()
 
-	sc := NewDefaultConnection(t)
+	sc, err := Connect(clusterName, clientName, AllowCloseRetry(true))
+	if err != nil {
+		t.Fatalf("Error on connect: %v", err)
+	}
 	defer sc.Close()
 
 	nc, err := nats.Connect(nats.DefaultURL)
