@@ -1,8 +1,8 @@
 #!/bin/bash -e
 # Run from directory above via ./scripts/cov.sh
 
-go get github.com/mattn/goveralls
-go get github.com/wadey/gocovmerge
+go install github.com/mattn/goveralls@latest
+go install github.com/wadey/gocovmerge@latest
 
 rm -rf ./cov
 mkdir cov
