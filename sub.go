@@ -262,6 +262,9 @@ func (sc *conn) subscribe(subject, qgroup string, cb MsgHandler, options ...Subs
 	// Listen for actual messages.
 	nsub, err := sc.nc.Subscribe(sub.inbox, sc.processMsg)
 	if err != nil {
+		sc.Lock()
+		delete(sc.subMap, sub.inbox)
+		sc.Unlock()
 		return nil, err
 	}
 	nsub.SetPendingLimits(-1, -1)
@@ -312,6 +315,9 @@ func (sc *conn) subscribe(subject, qgroup string, cb MsgHandler, options ...Subs
 			// Report this error to the user.
 			err = ErrSubReqTimeout
 		}
+		sc.Lock()
+		delete(sc.subMap, sub.inbox)
+		sc.Unlock()
 		return nil, err
 	}
 	r := &pb.SubscriptionResponse{}
