@@ -2815,6 +2815,10 @@ func TestSubTimeout(t *testing.T) {
 	if req.ClientID != clientName || req.Subject != "foo" || req.Inbox == "" {
 		t.Fatalf("Unexpected sub close request: %+v", req)
 	}
+
+	if len(scc.subMap) > 0 {
+		t.Fatal("Expected subMap to be empty")
+	}
 }
 
 func TestSubCloseError(t *testing.T) {

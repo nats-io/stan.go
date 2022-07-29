@@ -253,6 +253,16 @@ func (sc *conn) subscribe(subject, qgroup string, cb MsgHandler, options ...Subs
 	sc.subMap[sub.inbox] = sub
 	sc.Unlock()
 
+	doClean := true
+	defer func() {
+		if doClean {
+			sc.Lock()
+			//Un-register subscription.
+			delete(sc.subMap, sub.inbox)
+			sc.Unlock()
+		}
+	}()
+
 	// Hold lock throughout.
 	sub.Lock()
 	defer sub.Unlock()
@@ -324,6 +334,9 @@ func (sc *conn) subscribe(subject, qgroup string, cb MsgHandler, options ...Subs
 		return nil, errors.New(r.Error)
 	}
 	sub.ackInbox = r.AckInbox
+
+	// Prevent cleanup on exit.
+	doClean = false
 
 	return sub, nil
 }
