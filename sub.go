@@ -253,6 +253,16 @@ func (sc *conn) subscribe(subject, qgroup string, cb MsgHandler, options ...Subs
 	sc.subMap[sub.inbox] = sub
 	sc.Unlock()
 
+	doClean := true
+	defer func() {
+		if doClean {
+			sc.Lock()
+			//Un-register subscription.
+			delete(sc.subMap, sub.inbox)
+			sc.Unlock()
+		}
+	}()
+
 	// Hold lock throughout.
 	sub.Lock()
 	defer sub.Unlock()
@@ -262,9 +272,6 @@ func (sc *conn) subscribe(subject, qgroup string, cb MsgHandler, options ...Subs
 	// Listen for actual messages.
 	nsub, err := sc.nc.Subscribe(sub.inbox, sc.processMsg)
 	if err != nil {
-		sc.Lock()
-		delete(sc.subMap, sub.inbox)
-		sc.Unlock()
 		return nil, err
 	}
 	nsub.SetPendingLimits(-1, -1)
@@ -315,9 +322,6 @@ func (sc *conn) subscribe(subject, qgroup string, cb MsgHandler, options ...Subs
 			// Report this error to the user.
 			err = ErrSubReqTimeout
 		}
-		sc.Lock()
-		delete(sc.subMap, sub.inbox)
-		sc.Unlock()
 		return nil, err
 	}
 	r := &pb.SubscriptionResponse{}
@@ -330,6 +334,9 @@ func (sc *conn) subscribe(subject, qgroup string, cb MsgHandler, options ...Subs
 		return nil, errors.New(r.Error)
 	}
 	sub.ackInbox = r.AckInbox
+
+	// Prevent cleanup on exit.
+	doClean = false
 
 	return sub, nil
 }
