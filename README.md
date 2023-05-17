@@ -2,12 +2,17 @@
 
 NATS Streaming is an extremely performant, lightweight reliable streaming platform powered by [NATS](https://nats.io).
 
+# WARNING: Deprecation Notice :warning:
+
+The NATS Streaming is being deprecated. Critical bug fixes and security fixes will be applied until June of 2023. NATS enabled applications requiring persistence should use [JetStream](https://docs.nats.io/nats-concepts/jetstream).
+
 [![License Apache 2](https://img.shields.io/badge/License-Apache2-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 [![Build Status](https://travis-ci.com/nats-io/stan.go.svg?branch=main)](https://travis-ci.com/github/nats-io/stan.go)
 [![Coverage Status](https://coveralls.io/repos/nats-io/stan.go/badge.svg?branch=main)](https://coveralls.io/r/nats-io/stan.go?branch=main)
 [![GoDoc](https://godoc.org/github.com/nats-io/stan.go?status.svg)](http://godoc.org/github.com/nats-io/stan.go)
 
 NATS Streaming provides the following high-level feature set:
+
 - Log based persistence
 - At-Least-Once Delivery model, giving reliable message delivery
 - Rate matched on a per subscription basis
@@ -222,6 +227,7 @@ except the `DurableName` option must be used to specify durability.
 ```go
 sc.QueueSubscribe("foo", "bar", qcb, stan.DurableName("dur"))
 ```
+
 A group called `dur:bar` (the concatenation of durable name and group name) is created in
 the server. This means two things:
 
@@ -246,12 +252,12 @@ The rules for non-durable queue subscribers apply to durable subscribers.
 
 As for non-durable queue subscribers, if a member's connection is closed, or if
 `Unsubscribe` its called, the member leaves the group. Any unacknowledged message
-is transferred to remaining members. See *Closing the Group* for important difference
+is transferred to remaining members. See _Closing the Group_ for important difference
 with non-durable queue subscribers.
 
 #### Closing the Group
 
-The *last* member calling `Unsubscribe` will close (that is destroy) the
+The _last_ member calling `Unsubscribe` will close (that is destroy) the
 group. So if you want to maintain durability of the group, you should not be
 calling `Unsubscribe`.
 
@@ -260,11 +266,9 @@ with no member in the server. When a new member re-joins the durable queue group
 it will resume from where the group left of, actually first receiving all unacknowledged
 messages that may have been left when the last member previously left.
 
-
 ### Wildcard Subscriptions
 
 NATS Streaming subscriptions **do not** support wildcards.
-
 
 ## Advanced Usage
 
