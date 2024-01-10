@@ -2,6 +2,18 @@
 
 ### Running the server
 
+#### Docker Support
+
+The stan-bench defines a Dockerfile to run the stan-bench operation on demand.
+
+`docker build -f examples\stan-bench\Dockerfile -t vcillusion/stan.go:stan-bench-0.1 .`
+
+`docker push -f examples\stan-bench\Dockerfile -t vcillusion/stan.go:stan-bench-0.1 .`
+
+The stan-bench defines a Dockerfile to run the stan-bench operation on demand.
+
+`docker run vcillusion/stan.go:stan-bench-0.1 -np 1 -ns 1 -ms 2 -n 2 foo`
+
 #### This is in-memory storage
 ```bash
 > nats-streaming-server
